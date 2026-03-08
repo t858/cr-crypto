@@ -1,0 +1,119 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --shadow-mentor-shadow: 0px 4px 20px rgba(110, 127, 185, 0.1);
+
+  --inset-54\%: 54%;
+  --inset-40\%: 40%;
+
+  --color-primary: #ffffff;
+  --color-secondary: #aaaaaa;
+  --color-body-bg: #000000;
+  --color-darkmode: #0a0a0a;
+  --color-tablebg: #111111;
+  --color-border: #333333;
+  --color-lightblue: #888888;
+  --color-lightsky: #f5f5f5;
+  --color-lightpurple: #cccccc;
+
+  --blur-390: 390px;
+
+  --background-image-banner-image: linear-gradient(90deg,
+      #33333380,
+      #00000080 97.15%);
+  --background-image-simple-bg: linear-gradient(90deg,
+      rgba(255, 255, 255, 0.1),
+      rgba(100, 100, 100, 0.1) 97.15%);
+  --background-image-arrow-bg: url('/images/simple/arrow-bg.png');
+  --background-image-newsletter: url('/images/newsletter/hands.svg');
+
+  --animate-marquee: marquee 35s linear infinite;
+
+  @keyframes marquee {
+    0% {
+      transform: translateX(0%);
+    }
+
+    100% {
+      transform: translateX(-100%);
+    }
+  }
+
+  --animate-float: float 4s ease-in-out infinite;
+  --animate-float-delayed: float 4s ease-in-out 2s infinite;
+
+  @keyframes float {
+    0% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-15px);
+    }
+
+    100% {
+      transform: translateY(0);
+    }
+  }
+}
+
+@layer utilities {
+  .ticker-wrap {
+    overflow: hidden;
+    white-space: nowrap;
+    display: flex;
+  }
+
+  .ticker {
+    display: flex;
+    white-space: nowrap;
+    animation: var(--animate-marquee);
+  }
+
+  .ticker:hover {
+    animation-play-state: paused;
+  }
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+
+  section {
+    @apply py-14 bg-body-bg;
+  }
+
+  h1 {
+    @apply text-white font-bold lg:text-7xl sm:text-6xl text-5xl;
+  }
+
+  h2 {
+    @apply text-lightsky sm:text-5xl text-4xl font-bold;
+  }
+}
+
+@layer utilities {
+  .container {
+    @apply max-w-7xl mx-auto w-full px-4;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
