@@ -87,7 +87,7 @@ const Header: React.FC = () => {
           <div className='flex items-center gap-4'>
             <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-              <span className="text-sm text-gray-300 font-medium">Markets Open</span>
+              <span className="text-sm text-gray-300 font-medium">Markets Open.</span>
             </div>
             <button aria-label="Toggle Theme" className="hidden lg:flex items-center justify-center p-2 rounded-lg hover:bg-white/10 text-gray-300 transition-colors">
               <Icon icon="lucide:sun" className="text-xl" />
