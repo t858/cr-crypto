@@ -22,15 +22,15 @@ const Banner = () => {
 
                 <div className='flex items-center gap-10 mb-10 justify-center lg:justify-start'>
                   <div>
-                    <h3 className='text-white text-3xl font-bold'>$12.5M+</h3>
+                    <h3 className='text-white text-3xl font-bold'>$300k+</h3>
                     <p className='text-gray-500 text-sm'>Trader Profits</p>
                   </div>
                   <div>
-                    <h3 className='text-green-500 text-3xl font-bold'>89%</h3>
+                    <h3 className='text-green-500 text-3xl font-bold'>68%</h3>
                     <p className='text-gray-500 text-sm'>Success Rate</p>
                   </div>
                   <div>
-                    <h3 className='text-white text-3xl font-bold'>50K+</h3>
+                    <h3 className='text-white text-3xl font-bold'>1K+</h3>
                     <p className='text-gray-500 text-sm'>Active Copiers</p>
                   </div>
                 </div>
