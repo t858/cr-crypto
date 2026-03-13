@@ -2,159 +2,223 @@
 
 import { useState } from "react";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import toast from "react-hot-toast";
 
-type Message = {
+type Article = {
     id: string;
-    sender: string;
-    avatar: string;
-    content: string;
+    title: string;
+    excerpt: string;
+    category: string;
+    image: string;
     time: string;
-    isMe: boolean;
-    tradeInfo?: { coin: string; action: string; amount: string; return: string; btnLabel: string };
+    author: string;
 };
 
-export default function CopyTradingPage() {
-    const [messages, setMessages] = useState<Message[]>([
-        {
-            id: "1",
-            sender: "CryptoWhale",
-            avatar: "https://i.pravatar.cc/150?u=cryptowhale",
-            content: "I'm seeing a strong support forming for SOL around $140. I just opened a long position.",
-            time: "10:30 AM",
-            isMe: false,
-            tradeInfo: { coin: "SOL", action: "LONG", amount: "$5,000", return: "+12.4%", btnLabel: "Copy Trade" }
-        },
-        {
-            id: "2",
-            sender: "Satoshi_Fan",
-            avatar: "https://i.pravatar.cc/150?u=satoshi",
-            content: "Agree! The momentum looks great right now. We might see a breakout soon.",
-            time: "10:35 AM",
-            isMe: false,
-        }
-    ]);
+const MOCK_NEWS: Article[] = [
+    {
+        id: "1",
+        title: "Bitcoin Surges Past $65,000 Following New ETF Approvals",
+        excerpt: "Institutional demand continues to drive the market as major funds pour capital into recently approved Bitcoin Exchange Traded Funds.",
+        category: "Markets",
+        image: "https://images.unsplash.com/photo-1518546305927-5a555bb7020d?q=80&w=800&auto=format&fit=crop",
+        time: "2 hours ago",
+        author: "Sarah Jenkins"
+    },
+    {
+        id: "2",
+        title: "Ethereum's 'Dencun' Upgrade Successfully Deployed on Testnet",
+        excerpt: "Developers confirm the massive upgrade aiming to reduce Layer 2 rollup fees has been successfully tested ahead of mainnet launch.",
+        category: "Technology",
+        image: "https://images.unsplash.com/photo-1622736468798-e7c5abdbf572?q=80&w=800&auto=format&fit=crop",
+        time: "5 hours ago",
+        author: "Michael Chang"
+    },
+    {
+        id: "3",
+        title: "Solana Network Hits Record High TPS Amid Network Congestion Queries",
+        excerpt: "Despite recent outages, the Solana blockchain processed a record number of transactions this week driven by meme coin trading.",
+        category: "Altcoins",
+        image: "https://images.unsplash.com/photo-1639815188546-c43c240ff4df?q=80&w=800&auto=format&fit=crop",
+        time: "8 hours ago",
+        author: "David Ross"
+    },
+    {
+        id: "4",
+        title: "New Regulatory Framework Proposed for USD-Backed Stablecoins",
+        excerpt: "Global finance ministers draft comprehensive guidelines for systemic stablecoins to prevent future de-pegging events.",
+        category: "Regulation",
+        image: "https://images.unsplash.com/photo-1621504450181-5d356f61d307?q=80&w=800&auto=format&fit=crop",
+        time: "Yesterday",
+        author: "Elena Rodriguez"
+    },
+    {
+        id: "5",
+        title: "DeFi TVL Crosses $100 Billion Mark for First Time Since 2022",
+        excerpt: "Yield farming and liquid staking protocols see a massive resurgence as overall market sentiment flips extremely bullish.",
+        category: "DeFi",
+        image: "https://images.unsplash.com/photo-1639762681485-074b7f4ec651?q=80&w=800&auto=format&fit=crop",
+        time: "Yesterday",
+        author: "Alex Thompson"
+    },
+    {
+        id: "6",
+        title: "Institutional Adoption of Crypto Accelerates Globally",
+        excerpt: "Major banks and financial institutions are finally integrating cryptocurrency custody and settlement systems into their core offerings.",
+        category: "Adoption",
+        image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=800&auto=format&fit=crop",
+        time: "2 days ago",
+        author: "Marcus Wei"
+    }
+];
 
-    const [newMessage, setNewMessage] = useState("");
+const CATEGORIES = ["All News", "Markets", "Technology", "Altcoins", "Regulation", "DeFi", "NFTs"];
 
-    const handleSendMessage = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!newMessage.trim()) return;
+export default function NewsPage() {
+    const [activeCategory, setActiveCategory] = useState("All News");
 
-        const msg: Message = {
-            id: Date.now().toString(),
-            sender: "You",
-            avatar: "https://i.pravatar.cc/150?u=you",
-            content: newMessage,
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            isMe: true
-        };
+    const filteredNews = activeCategory === "All News"
+        ? MOCK_NEWS
+        : MOCK_NEWS.filter(article => article.category === activeCategory);
 
-        setMessages([...messages, msg]);
-        setNewMessage("");
-    };
-
-    const handleCopyTrade = (sender: string, trade: any) => {
-        toast.success(`Copied ${trade.action} on ${trade.coin} from ${sender}!`);
-    };
+    const featuredArticle = filteredNews[0];
+    const regularArticles = filteredNews.slice(1);
 
     return (
-        <div className="max-w-4xl mx-auto flex flex-col h-[calc(100vh-140px)] lg:h-[calc(100vh-64px)] pb-16 lg:pb-0">
-
-            {/* Header Info */}
-            <div className="flex items-center justify-between mb-6 shrink-0">
-                <div>
-                    <h1 className="text-2xl font-bold">Copy Trading VIP</h1>
-                    <p className="text-gray-400 text-sm flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                        842 traders online
+        <div className="w-full flex flex-col min-h-full pb-20 lg:pb-0 bg-[#111315]">
+            {/* Header Section */}
+            <div className="bg-[#1b1e22] border-b border-white/5 py-8 px-4 lg:px-8">
+                <div className="max-w-[1200px] mx-auto">
+                    <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+                        <Icon icon="lucide:globe" className="text-[#1e88e5]" />
+                        Crypto Insight Daily
+                    </h1>
+                    <p className="text-gray-400 text-sm max-w-xl leading-relaxed">
+                        Stay ahead of the market with the latest happenings, deep-dives, and regulatory updates across the global cryptocurrency ecosystem.
                     </p>
-                </div>
-                <div className="hidden sm:flex items-center gap-3">
-                    <div className="flex -space-x-2">
-                        <img src="https://i.pravatar.cc/150?u=1" className="w-8 h-8 rounded-full border-2 border-[#07011d]" alt="user" />
-                        <img src="https://i.pravatar.cc/150?u=2" className="w-8 h-8 rounded-full border-2 border-[#07011d]" alt="user" />
-                        <img src="https://i.pravatar.cc/150?u=3" className="w-8 h-8 rounded-full border-2 border-[#07011d]" alt="user" />
-                        <div className="w-8 h-8 rounded-full border-2 border-[#07011d] bg-white/10 flex items-center justify-center text-xs">+</div>
+
+                    {/* Category Filter */}
+                    <div className="flex gap-2 overflow-x-auto custom-scrollbar mt-6 pb-2">
+                        {CATEGORIES.map(cat => (
+                            <button
+                                key={cat}
+                                onClick={() => setActiveCategory(cat)}
+                                className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors border ${activeCategory === cat
+                                        ? "bg-[#1e88e5] text-white border-[#1e88e5]"
+                                        : "bg-transparent text-gray-400 border-white/10 hover:border-white/30 hover:text-white"
+                                    }`}
+                            >
+                                {cat}
+                            </button>
+                        ))}
                     </div>
                 </div>
             </div>
 
-            {/* Chat Area */}
-            <div className="flex-1 bg-[#11062b] border border-white/5 rounded-3xl overflow-hidden flex flex-col relative">
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none opacity-20"></div>
+            {/* Main Content Area */}
+            <div className="p-4 lg:p-8 max-w-[1200px] mx-auto w-full">
 
-                {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6 z-10">
-                    {messages.map((msg) => (
-                        <div key={msg.id} className={`flex gap-4 max-w-[85%] ${msg.isMe ? 'ml-auto flex-row-reverse' : ''}`}>
-                            <img src={msg.avatar} alt={msg.sender} className="w-10 h-10 rounded-full shrink-0 object-cover border border-white/10" />
-
-                            <div className={`flex flex-col ${msg.isMe ? 'items-end' : 'items-start'}`}>
-                                <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-sm font-semibold text-white/90">{msg.sender}</span>
-                                    <span className="text-xs text-white/40">{msg.time}</span>
-                                    {msg.sender === "CryptoWhale" && (
-                                        <span className="bg-[#d97706] text-white text-[10px] px-1.5 py-0.5 rounded font-bold">EXPERT</span>
-                                    )}
+                {filteredNews.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-gray-500">
+                        <Icon icon="lucide:newspaper" className="text-6xl mb-4 opacity-50" />
+                        <h2 className="text-xl font-bold text-white mb-2">No Articles Found</h2>
+                        <p>No recent news available for the "{activeCategory}" category.</p>
+                        <button
+                            onClick={() => setActiveCategory("All News")}
+                            className="mt-6 text-[#1e88e5] hover:text-white underline transition-colors"
+                        >
+                            View All News
+                        </button>
+                    </div>
+                ) : (
+                    <>
+                        {/* Featured Article (Full width card) */}
+                        {featuredArticle && (
+                            <div className="mb-8 bg-[#1b1e22] rounded-2xl border border-white/5 overflow-hidden flex flex-col lg:flex-row group cursor-pointer hover:border-white/10 transition-colors">
+                                <div className="lg:w-2/3 h-[300px] lg:h-[400px] relative overflow-hidden">
+                                    <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors z-10"></div>
+                                    <img
+                                        src={featuredArticle.image}
+                                        alt={featuredArticle.title}
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                                    />
+                                    <div className="absolute top-4 left-4 z-20">
+                                        <span className="bg-[#1e88e5] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">
+                                            Featured • {featuredArticle.category}
+                                        </span>
+                                    </div>
                                 </div>
-
-                                <div className={`p-4 rounded-2xl text-sm leading-relaxed block ${msg.isMe ? 'bg-primary text-black rounded-tr-sm' : 'bg-white/5 border border-white/10 rounded-tl-sm text-white/90'}`}>
-                                    {msg.content}
-                                </div>
-
-                                {msg.tradeInfo && (
-                                    <div className="mt-2 bg-gradient-to-r from-green-500/10 to-transparent border border-green-500/20 rounded-xl p-3 w-64 shadow-lg backdrop-blur-sm">
-                                        <p className="text-xs text-white/60 mb-2 uppercase font-semibold">Active Trade</p>
-                                        <div className="flex items-center justify-between mb-3">
-                                            <div className="flex items-center gap-2">
-                                                <Icon icon={`cryptocurrency-color:${msg.tradeInfo.coin.toLowerCase()}`} className="text-xl" />
-                                                <span className="font-bold">{msg.tradeInfo.coin}</span>
+                                <div className="lg:w-1/3 p-6 lg:p-8 flex flex-col justify-center bg-gradient-to-br from-[#1b1e22] to-[#16181b]">
+                                    <div className="flex items-center gap-2 text-xs text-gray-500 font-medium mb-4 uppercase tracking-wider">
+                                        <Icon icon="lucide:clock" className="text-sm" />
+                                        {featuredArticle.time}
+                                    </div>
+                                    <h2 className="text-2xl lg:text-3xl font-bold text-white mb-4 group-hover:text-[#1e88e5] transition-colors leading-tight">
+                                        {featuredArticle.title}
+                                    </h2>
+                                    <p className="text-gray-400 leading-relaxed mb-6 flex-1">
+                                        {featuredArticle.excerpt}
+                                    </p>
+                                    <div className="flex items-center justify-between pt-6 border-t border-white/5 mt-auto">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-[#111315] border border-white/10 flex items-center justify-center text-xs font-bold text-white">
+                                                {featuredArticle.author.charAt(0)}
                                             </div>
-                                            <span className={`text-xs font-bold px-2 py-0.5 rounded uppercase ${msg.tradeInfo.action === 'LONG' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                                                {msg.tradeInfo.action}
-                                            </span>
+                                            <span className="text-sm font-medium text-gray-300">{featuredArticle.author}</span>
                                         </div>
-                                        <div className="flex items-center justify-between text-sm mb-3">
-                                            <span className="text-white/60">Margin: <span className="text-white font-medium">{msg.tradeInfo.amount}</span></span>
-                                            <span className="text-green-400 font-bold">{msg.tradeInfo.return}</span>
-                                        </div>
-                                        <button
-                                            onClick={() => handleCopyTrade(msg.sender, msg.tradeInfo)}
-                                            className="w-full bg-green-500 hover:bg-green-400 text-black text-xs font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-1"
-                                        >
-                                            <Icon icon="lucide:copy" className="text-sm" />
-                                            Copy Trade
+                                        <button className="text-[#1e88e5] group-hover:text-white transition-colors">
+                                            <Icon icon="lucide:arrow-right" className="text-xl -rotate-45 group-hover:rotate-0 transition-transform" />
                                         </button>
                                     </div>
-                                )}
+                                </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
+                        )}
 
-                {/* Input Area */}
-                <div className="p-4 bg-[#11062b]/80 backdrop-blur-md border-t border-white/5 z-10 shrink-0">
-                    <form onSubmit={handleSendMessage} className="flex gap-3">
-                        <button type="button" className="shrink-0 w-12 h-12 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-colors">
-                            <Icon icon="lucide:plus" className="text-xl" />
-                        </button>
-                        <input
-                            type="text"
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                            placeholder="Message in Copy Trading VIP..."
-                            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 text-sm focus:outline-none focus:border-[#a78bfa] transition-colors"
-                        />
-                        <button
-                            type="submit"
-                            disabled={!newMessage.trim()}
-                            className="shrink-0 w-12 h-12 flex items-center justify-center rounded-xl bg-primary hover:bg-primary/90 text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <Icon icon="lucide:send" className="text-xl" />
-                        </button>
-                    </form>
-                </div>
+                        {/* Grid of Articles */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {regularArticles.map(article => (
+                                <div key={article.id} className="bg-[#1b1e22] rounded-xl border border-white/5 overflow-hidden flex flex-col group cursor-pointer hover:border-white/10 hover:-translate-y-1 transition-all duration-300 shadow-sm hover:shadow-[0_8px_30px_rgba(0,0,0,0.5)]">
+                                    <div className="h-[200px] relative overflow-hidden">
+                                        <img
+                                            src={article.image}
+                                            alt={article.title}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                                        />
+                                        <div className="absolute top-3 left-3 z-20">
+                                            <span className="bg-black/60 backdrop-blur-sm border border-white/10 text-gray-200 text-xs font-semibold px-2.5 py-1 rounded-md tracking-wide">
+                                                {article.category}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="p-5 flex flex-col flex-1">
+                                        <div className="flex items-center gap-2 text-xs text-gray-500 font-medium mb-3">
+                                            <Icon icon="lucide:clock" />
+                                            {article.time}
+                                        </div>
+                                        <h3 className="text-lg font-bold text-white mb-2 group-hover:text-[#1e88e5] transition-colors leading-snug line-clamp-2">
+                                            {article.title}
+                                        </h3>
+                                        <p className="text-gray-400 text-sm leading-relaxed mb-4 line-clamp-2 flex-1">
+                                            {article.excerpt}
+                                        </p>
+                                        <div className="flex items-center justify-between pt-4 border-t border-white/5 mt-auto">
+                                            <span className="text-xs font-medium text-gray-500">{article.author}</span>
+                                            <button className="text-gray-400 group-hover:text-[#1e88e5] transition-colors">
+                                                <Icon icon="lucide:bookmark" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {filteredNews.length > 0 && (
+                            <div className="mt-12 flex justify-center">
+                                <button className="bg-transparent border border-[#1e88e5] text-white hover:bg-[#1e88e5]/10 font-bold py-3 px-8 rounded-full transition-colors text-sm tracking-wide">
+                                    Load More Articles
+                                </button>
+                            </div>
+                        )}
+                    </>
+                )}
             </div>
         </div>
     );

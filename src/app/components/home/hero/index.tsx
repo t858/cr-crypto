@@ -34,13 +34,13 @@ const Banner = () => {
                     <p className='text-gray-500 text-sm'>Active Copiers</p>
                   </div>
                 </div>
-                <div className='flex align-middle justify-center lg:justify-start gap-4'>
-                  <Link href='/signup' className='text-lg font-semibold text-white py-4 px-8 bg-[#D97706] hover:bg-[#B45309] rounded-xl cursor-pointer transition-colors flex items-center gap-2'>
-                    Start Copy Trading <Icon icon='lucide:arrow-right' className='text-xl' />
+                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start" data-aos="fade-up" data-aos-duration="1400">
+                  <Link href="/signin" className="bg-[#1e88e5] text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-[#1565c0] hover:shadow-[0_0_20px_rgba(30,136,229,0.4)] transition-all duration-300 w-full sm:w-auto text-center border-2 border-[#1e88e5]">
+                    Start Trading Now
                   </Link>
                   <Link
-                    href='/signup'
-                    className='bg-transparent border border-border py-4 px-8 rounded-xl flex justify-center items-center text-white cursor-pointer hover:bg-white/5 transition-colors gap-2 font-semibold'>
+                    href='/signin'
+                    className='bg-transparent border border-border py-4 px-8 rounded-full flex justify-center items-center text-white cursor-pointer hover:bg-white/5 transition-colors gap-2 font-semibold w-full sm:w-auto'>
                     <Icon icon='lucide:award' className='text-xl text-[#D97706]' />
                     <span>View Top Traders</span>
                   </Link>

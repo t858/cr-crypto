@@ -93,26 +93,16 @@ const Header: React.FC = () => {
               <Icon icon="lucide:sun" className="text-xl" />
             </button>
 
-            {session ? (
-              <Link
-                href='/signup'
-                className='hidden lg:flex items-center justify-center bg-[#D97706] hover:bg-[#B45309] text-white duration-300 px-6 py-2.5 rounded-lg font-medium transition-colors'>
-                Start Trading
-              </Link>
-            ) : (
-              <>
-                <Link
-                  href='/signup'
-                  className='hidden lg:block text-gray-300 hover:text-white transition-colors duration-300 px-4 py-2'>
-                  Sign In
-                </Link>
-                <Link
-                  href='/signup'
-                  className='hidden lg:flex items-center justify-center bg-[#D97706] hover:bg-[#B45309] text-white duration-300 px-6 py-2.5 rounded-lg font-medium transition-colors'>
-                  Start Trading
-                </Link>
-              </>
-            )}
+            <Link
+              href='/signin'
+              className='hidden lg:block text-gray-300 hover:text-white transition-colors duration-300 px-4 py-2'>
+              Sign In
+            </Link>
+            <Link
+              href='/signup'
+              className='hidden lg:flex items-center justify-center bg-[#D97706] hover:bg-[#B45309] text-white duration-300 px-6 py-2.5 rounded-lg font-medium transition-colors'>
+              Start Trading
+            </Link>
 
             <button
               onClick={() => setNavbarOpen(!navbarOpen)}
@@ -150,29 +140,18 @@ const Header: React.FC = () => {
               <MobileHeaderLink key={index} item={item} />
             ))}
             <div className='mt-4 flex flex-col space-y-4 w-full'>
-              {session ? (
-                <Link
-                  href='/signup'
-                  className='bg-primary text-black px-4 py-2 rounded-lg text-center font-semibold'
-                  onClick={() => setNavbarOpen(false)}>
-                  Start Trading
-                </Link>
-              ) : (
-                <>
-                  <Link
-                    href='/signup'
-                    className='bg-transparent border border-primary text-primary px-4 py-2 rounded-lg hover:bg-primary hover:text-white text-center font-semibold'
-                    onClick={() => setNavbarOpen(false)}>
-                    Sign In
-                  </Link>
-                  <Link
-                    href='/signup'
-                    className='bg-primary text-black px-4 py-2 rounded-lg hover:bg-transparent border border-primary hover:text-primary text-center font-semibold'
-                    onClick={() => setNavbarOpen(false)}>
-                    Start Trading
-                  </Link>
-                </>
-              )}
+              <Link
+                href='/signin'
+                className='bg-transparent border border-primary text-primary px-4 py-2 rounded-lg hover:bg-primary hover:text-white text-center font-semibold'
+                onClick={() => setNavbarOpen(false)}>
+                Sign In
+              </Link>
+              <Link
+                href='/signup'
+                className='bg-primary text-black px-4 py-2 rounded-lg hover:bg-transparent border border-primary hover:text-primary text-center font-semibold'
+                onClick={() => setNavbarOpen(false)}>
+                Start Trading
+              </Link>
             </div>
           </nav>
         </div>

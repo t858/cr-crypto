@@ -1,35 +1,119 @@
-import { Metadata } from "next";
-import Link from "next/link";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Sign Up | Crypto Trading",
-};
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import toast from "react-hot-toast";
+import { Icon } from "@iconify/react/dist/iconify.js";
 
 const SignupPage = () => {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // 1. Create the user
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.message || "Failed to create account");
+        setLoading(false);
+        return;
+      }
+
+      toast.success("Account created! Please sign in to continue.");
+      router.push("/signin");
+    } catch (error) {
+      toast.error("An unexpected error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center pt-32 pb-12 bg-[#07011d] relative z-10 px-4">
       <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 z-0"></div>
-      <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#d97706]/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/3 z-0"></div>
+      <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#1e88e5]/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/3 z-0"></div>
 
-      <div className="relative mx-auto w-full max-w-md bg-[#11062b] overflow-hidden rounded-2xl backdrop-blur-md px-8 pt-12 pb-8 text-center z-10 border border-white/10 shadow-2xl">
-        <div className="mb-6 flex justify-center">
-          <div className="w-16 h-16 bg-primary/20 text-primary rounded-full flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </div>
+      {/* Back to Home Button */}
+      <Link 
+        href="/" 
+        className="absolute top-8 left-8 z-50 flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-gray-300 hover:text-white transition-all backdrop-blur-md"
+      >
+        <Icon icon="lucide:arrow-left" className="text-lg" />
+        <span className="font-medium text-sm">Back to Home</span>
+      </Link>
+
+      <div className="relative mx-auto w-full max-w-md bg-[#11062b] overflow-hidden rounded-2xl backdrop-blur-md px-8 pt-10 pb-8 z-10 border border-white/10 shadow-2xl">
+        <div className="mb-6 text-center">
+          <h2 className="text-3xl font-bold text-white mb-2 tracking-tight">Create Account</h2>
+          <p className="text-gray-400 text-sm">Join us to start trading securely</p>
         </div>
-        <h2 className="text-2xl font-bold text-white mb-4">Under Maintenance</h2>
-        <p className="text-gray-400 text-sm leading-relaxed mb-6">
-          This section of the site is currently undergoing maintenance and will be back in operation after 48 to 72 hours. We apologize for the inconvenience.
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5 px-1">Full Name</label>
+            <input
+              type="text"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full bg-[#1b1136] border border-white/10 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-[#1e88e5] transition-colors"
+              placeholder="John Doe"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5 px-1">Email Address</label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full bg-[#1b1136] border border-white/10 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-[#1e88e5] transition-colors"
+              placeholder="name@example.com"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5 px-1">Secure Password</label>
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full bg-[#1b1136] border border-white/10 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-[#1e88e5] transition-colors"
+              placeholder="••••••••"
+            />
+            <p className="text-[11px] text-gray-500 mt-2 px-1 leading-relaxed">
+              Must be at least 8 characters containing 1 uppercase, 1 lowercase, 1 number, and 1 special symbol.
+            </p>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3.5 mt-4 rounded-xl font-bold transition-all bg-[#1e88e5] hover:bg-[#1a73e8] text-white disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center"
+          >
+            {loading ? "Creating account..." : "Sign Up"}
+          </button>
+        </form>
+
+        <p className="text-center text-sm text-gray-400 mt-6">
+          Already have an account? <Link href="/signin" className="text-[#1e88e5] hover:text-[#5cb8ff] font-medium transition-colors">Sign in</Link>
         </p>
-        <Link href="/" className="inline-flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-lg px-6 py-2.5 transition-colors font-medium">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          Return to Home
-        </Link>
       </div>
     </div>
   );
