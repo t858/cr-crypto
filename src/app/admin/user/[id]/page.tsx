@@ -1,9 +1,10 @@
 import AdminUserEditor from "./AdminUserEditor";
 
-export default function EditUserPage({ params }: { params: { id: string } }) {
+export default async function EditUserPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
     return (
         <div className="w-full">
-            <AdminUserEditor userId={params.id} />
+            <AdminUserEditor userId={id} />
         </div>
     );
 }

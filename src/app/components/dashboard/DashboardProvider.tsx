@@ -65,12 +65,13 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     const [metadata, setMetadata] = useState<UserMetadata>(DEFAULT_METADATA);
 
     useEffect(() => {
-        if (session?.user?.id) {
+        const userId = (session?.user as any)?.id;
+        if (userId) {
             const fetchMetadata = async () => {
                 const { data, error } = await supabase
                     .from('users')
                     .select('metadata')
-                    .eq('id', session.user.id)
+                    .eq('id', userId)
                     .single();
 
                 if (data?.metadata) {
@@ -79,7 +80,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
             };
             fetchMetadata();
         }
-    }, [session?.user?.id]);
+    }, [session?.user]);
 
     const [balance, setBalance] = useState(0.00);
     const [invested, setInvested] = useState(0.00);
