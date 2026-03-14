@@ -35,7 +35,7 @@ const Banner = () => {
                   </div>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start" data-aos="fade-up" data-aos-duration="1400">
-                  <Link href="/signin" className="bg-[#1e88e5] text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-[#1565c0] hover:shadow-[0_0_20px_rgba(30,136,229,0.4)] transition-all duration-300 w-full sm:w-auto text-center border-2 border-[#1e88e5]">
+                  <Link href="/signin" className="bg-[#D97706] text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-[#B45309] hover:shadow-[0_0_20px_rgba(217,119,6,0.4)] transition-all duration-300 w-full sm:w-auto text-center border-2 border-[#D97706]">
                     Start Trading Now
                   </Link>
                   <Link
