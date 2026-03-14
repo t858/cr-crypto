@@ -227,7 +227,13 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
 
                 {/* Mobile Header */}
                 <header className="lg:hidden flex items-center justify-between p-4 bg-[#1b1e22] sticky top-0 z-30 w-full shrink-0 border-b border-white/5">
-                    <Logo />
+                    <div className="flex items-center gap-3">
+                        <Logo />
+                        <div className="h-6 w-px bg-white/10 hidden sm:block"></div>
+                        <div className="font-semibold text-sm text-gray-300 truncate max-w-[120px]" title={session?.user?.name || session?.user?.email || "Trader"}>
+                            {session?.user?.name || session?.user?.email?.split('@')[0] || "Trader"}
+                        </div>
+                    </div>
                     <Link href="/" className="text-sm border border-white/10 px-3 py-1.5 rounded-lg hover:bg-white/5 text-gray-300">
                         Exit
                     </Link>
