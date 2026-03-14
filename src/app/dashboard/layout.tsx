@@ -22,7 +22,8 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
         activeModal,
         setActiveModal,
         balance,
-        setBalance
+        setBalance,
+        metadata
     } = useDashboard();
     const pathname = usePathname();
     const isActive = (path: string) => pathname === path;
@@ -109,15 +110,17 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                 </div>
 
                 {/* Profile Section */}
-                <div className="px-6 flex flex-col gap-4 mt-2 mb-6">
+                <div className="px-6 flex flex-col gap-4 mt-2 mb-6 cursor-pointer hover:bg-white/5 p-2 -mx-2 rounded-xl transition-colors" onClick={() => (window.location.href = '/dashboard/profile')}>
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full overflow-hidden border border-white/10 shrink-0 bg-[#3b82f6] flex items-center justify-center font-bold text-xl text-white uppercase">
-                            {profileInitials ? profileInitials : (
+                        <div className="w-12 h-12 rounded-full overflow-hidden border border-white/10 shrink-0 bg-[#3b82f6] flex items-center justify-center font-bold text-xl text-white uppercase relative">
+                            {metadata?.profile?.photoUrl ? (
+                                <img src={metadata.profile.photoUrl} alt="Profile" className="w-full h-full object-cover" />
+                            ) : profileInitials ? profileInitials : (
                                 <Icon icon="lucide:user" className="text-white/50" />
                             )}
                         </div>
-                        <div className="font-semibold text-[15px] truncate max-w-[150px]" title={session?.user?.name || session?.user?.email || "Trader"}>
-                            {session?.user?.name || session?.user?.email?.split('@')[0] || "Trader"}
+                        <div className="font-semibold text-[15px] truncate max-w-[150px]" title={metadata?.profile?.fullName || session?.user?.name || session?.user?.email || "Trader"}>
+                            {metadata?.profile?.fullName || session?.user?.name || session?.user?.email?.split('@')[0] || "Trader"}
                         </div>
                     </div>
 
@@ -230,8 +233,17 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                     <div className="flex items-center gap-3">
                         <Logo />
                         <div className="h-6 w-px bg-white/10 hidden sm:block"></div>
-                        <div className="font-semibold text-sm text-gray-300 truncate max-w-[120px]" title={session?.user?.name || session?.user?.email || "Trader"}>
-                            {session?.user?.name || session?.user?.email?.split('@')[0] || "Trader"}
+                        <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => (window.location.href = '/dashboard/profile')}>
+                            <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 shrink-0 bg-[#3b82f6] flex items-center justify-center font-bold text-sm text-white uppercase relative">
+                                {metadata?.profile?.photoUrl ? (
+                                    <img src={metadata.profile.photoUrl} alt="Profile" className="w-full h-full object-cover" />
+                                ) : profileInitials ? profileInitials : (
+                                    <Icon icon="lucide:user" className="text-white/50 w-4 h-4" />
+                                )}
+                            </div>
+                            <div className="font-semibold text-sm text-gray-300 truncate max-w-[120px]" title={metadata?.profile?.fullName || session?.user?.name || session?.user?.email || "Trader"}>
+                                {metadata?.profile?.fullName || session?.user?.name || session?.user?.email?.split('@')[0] || "Trader"}
+                            </div>
                         </div>
                     </div>
                     <Link href="/" className="text-sm border border-white/10 px-3 py-1.5 rounded-lg hover:bg-white/5 text-gray-300">

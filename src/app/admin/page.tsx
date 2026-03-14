@@ -1,13 +1,27 @@
-import { supabase } from "@/lib/supabase";
+import { adminDb } from "@/lib/firebaseAdmin";
 import Link from "next/link";
 import { Icon } from "@iconify/react/dist/iconify.js";
 
 export default async function AdminDashboardPage() {
-    // Fetch all registered users from the Supabase db directly from Server Component
-    const { data: users, error } = await supabase
-        .from('users')
-        .select('id, email, name, created_at')
-        .order('created_at', { ascending: false });
+    let users: any[] = [];
+    let error: any = null;
+
+    try {
+        const usersSnapshot = await adminDb.collection("users").orderBy("created_at", "desc").get();
+        usersSnapshot.forEach(doc => {
+            users.push({ id: doc.id, ...doc.data() });
+        });
+    } catch (e: any) {
+        // Fallback without ordering in case the index doesn't exist yet
+        try {
+            const usersSnapshot = await adminDb.collection("users").get();
+            usersSnapshot.forEach(doc => {
+                users.push({ id: doc.id, ...doc.data() });
+            });
+        } catch (fallbackError: any) {
+            error = fallbackError;
+        }
+    }
 
     if (error) {
         return <div className="p-10 text-red-500 font-mono">Fatal Error loading user database: {error.message}</div>;

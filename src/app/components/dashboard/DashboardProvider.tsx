@@ -1,10 +1,21 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { supabase } from "@/lib/supabase";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 type ModalType = "NONE" | "VERIFY_INFO" | "VERIFY_PIC" | "DEPOSIT" | "WITHDRAW" | "NOTIFICATIONS" | "TRANSACTION_HISTORY";
+
+export interface UserProfile {
+    fullName?: string;
+    phone?: string;
+    country?: string;
+    address?: string;
+    city?: string;
+    dob?: string;
+    photoUrl?: string;
+}
 
 export interface UserMetadata {
     walletTotal: string;
@@ -17,6 +28,7 @@ export interface UserMetadata {
         xrp: string;
         avax: string;
     };
+    profile?: UserProfile;
 }
 
 const DEFAULT_METADATA: UserMetadata = {
@@ -37,6 +49,15 @@ const DEFAULT_METADATA: UserMetadata = {
         ada: "$0.00",
         xrp: "$0.00",
         avax: "$0.00",
+    },
+    profile: {
+        fullName: "",
+        phone: "",
+        country: "",
+        address: "",
+        city: "",
+        dob: "",
+        photoUrl: "",
     }
 };
 
@@ -53,6 +74,7 @@ interface DashboardContextType {
     setInvested: (amt: number) => void;
     metadata: UserMetadata;
     setMetadata: (metadata: UserMetadata) => void;
+    refreshMetadata: () => Promise<void>;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
@@ -65,23 +87,28 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     const [activeModal, setActiveModal] = useState<ModalType>("NONE");
     const [metadata, setMetadata] = useState<UserMetadata>(DEFAULT_METADATA);
 
-    useEffect(() => {
+    const refreshMetadata = useCallback(async () => {
         const userId = (session?.user as any)?.id;
-        if (userId) {
-            const fetchMetadata = async () => {
-                const { data, error } = await supabase
-                    .from('users')
-                    .select('metadata')
-                    .eq('id', userId)
-                    .single();
+        if (!userId) return;
 
+        try {
+            const docRef = doc(db, "users", userId);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                const data = docSnap.data();
                 if (data?.metadata) {
                     setMetadata({ ...DEFAULT_METADATA, ...data.metadata });
                 }
-            };
-            fetchMetadata();
+            }
+        } catch (error) {
+            console.error("Failed to fetch user metadata from Firestore:", error);
         }
     }, [session?.user]);
+
+    useEffect(() => {
+        refreshMetadata();
+    }, [refreshMetadata]);
 
     const [balance, setBalance] = useState(0.00);
     const [invested, setInvested] = useState(0.00);
@@ -101,6 +128,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
                 setInvested,
                 metadata,
                 setMetadata,
+                refreshMetadata,
             }}
         >
             {children}

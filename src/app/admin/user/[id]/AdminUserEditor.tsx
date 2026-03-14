@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
+import { doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { Icon } from "@iconify/react/dist/iconify.js";
@@ -51,21 +52,25 @@ export default function AdminUserEditor({ userId }: { userId: string }) {
 
     useEffect(() => {
         const fetchUser = async () => {
-            const { data, error } = await supabase
-                .from('users')
-                .select('email, metadata')
-                .eq('id', userId)
-                .single();
+            try {
+                const docRef = doc(db, "users", userId);
+                const docSnap = await getDoc(docRef);
 
-            if (error) {
-                toast.error("Failed to load user");
-            } else if (data) {
-                setUserEmail(data.email);
-                // Deep merge fetched metadata with defaults to ensure schema safety
-                setMetadata({
-                    ...DEFAULT_METADATA,
-                    ...(data.metadata || {})
-                });
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    setUserEmail(data.email || "Unknown User");
+                    // Deep merge fetched metadata with defaults to ensure schema safety
+                    setMetadata({
+                        ...DEFAULT_METADATA,
+                        ...(data.metadata || {})
+                    });
+                } else {
+                    toast.error("User document not found natively in Firestore.");
+                    setUserEmail("Orphaned Auth Record");
+                }
+            } catch (error) {
+                console.error("Firestore error:", error);
+                toast.error("Failed to load user metadata");
             }
             setLoading(false);
         };
@@ -74,7 +79,7 @@ export default function AdminUserEditor({ userId }: { userId: string }) {
     }, [userId]);
 
     const handleChartDrag = (index: number, e: React.MouseEvent<HTMLDivElement>) => {
-        // If we're holding down the mouse
+        // ... (unchanged)
         if (e.buttons !== 1) return;
 
         const container = e.currentTarget;
@@ -91,6 +96,7 @@ export default function AdminUserEditor({ userId }: { userId: string }) {
     };
 
     const handleChartClick = (index: number, e: React.MouseEvent<HTMLDivElement>) => {
+        // ... (unchanged)
         const container = e.currentTarget;
         const rect = container.getBoundingClientRect();
         const y = e.clientY - rect.top;
@@ -105,16 +111,15 @@ export default function AdminUserEditor({ userId }: { userId: string }) {
 
     const saveToSupabase = async () => {
         setSaving(true);
-        const { error } = await supabase
-            .from('users')
-            .update({ metadata })
-            .eq('id', userId);
-
-        if (error) {
+        try {
+            const userRef = doc(db, "users", userId);
+            // using setDoc with merge to ensure the document exists if it was skipped 
+            // during an auth-only signup flow
+            await setDoc(userRef, { metadata }, { merge: true });
+            toast.success("User Dashboard Live Updated in Firestore");
+        } catch (error) {
+            console.error("Failed to save changes:", error);
             toast.error("Failed to save DB changes");
-            console.error(error);
-        } else {
-            toast.success("User Dashboard Live Updated");
         }
         setSaving(false);
     };
