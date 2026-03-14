@@ -1,10 +1,73 @@
 "use client";
 
 import { Icon } from "@iconify/react/dist/iconify.js";
+import { useState, useEffect } from "react";
 import { useDashboard } from "../../components/dashboard/DashboardProvider";
+
+const INITIAL_MARKET_OVERVIEW = [
+    { name: 'Bitcoin', symbol: 'BTC', price: "...", change: '...', isUp: true },
+    { name: 'Ethereum', symbol: 'ETH', price: "...", change: '...', isUp: true },
+    { name: 'Solana', symbol: 'SOL', price: "...", change: '...', isUp: true },
+    { name: 'Cardano', symbol: 'ADA', price: "...", change: '...', isUp: true },
+];
+
+const INITIAL_CRYPTO_LIST = [
+    { icon: 'bitcoin', name: 'Bitcoin (BTC)', symbol: 'BTC', date: 'Today', price: "...", isUp: true },
+    { icon: 'ethereum', name: 'Ethereum (ETH)', symbol: 'ETH', date: 'Today', price: "...", isUp: true },
+    { icon: 'solana', name: 'Solana (SOL)', symbol: 'SOL', date: 'Today', price: "...", isUp: true },
+    { icon: 'cardano', name: 'Cardano (ADA)', symbol: 'ADA', date: 'Today', price: "...", isUp: true },
+    { icon: 'ripple', name: 'Ripple (XRP)', symbol: 'XRP', date: 'Today', price: "...", isUp: true },
+    { icon: 'avalanche', name: 'Avalanche (AVAX)', symbol: 'AVAX', date: 'Today', price: "...", isUp: true }
+];
 
 export default function WalletPage() {
     const { setActiveModal, metadata } = useDashboard();
+    
+    const [marketOverview, setMarketOverview] = useState(INITIAL_MARKET_OVERVIEW);
+    const [cryptoList, setCryptoList] = useState(INITIAL_CRYPTO_LIST);
+
+    useEffect(() => {
+        const fetchLivePrices = async () => {
+            try {
+                const res = await fetch('https://api.coincap.io/v2/assets?limit=20');
+                const { data } = await res.json();
+                
+                if (data && data.length > 0) {
+                    const cryptoMap: Record<string, any> = {};
+                    data.forEach((coin: any) => {
+                        const price = parseFloat(coin.priceUsd);
+                        const change24h = parseFloat(coin.changePercent24Hr);
+                        cryptoMap[coin.symbol] = {
+                            price: price < 0.01 ? `$${price.toFixed(5)}` : `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                            change: `${change24h > 0 ? '+' : ''}${change24h.toFixed(2)}%`,
+                            isUp: change24h >= 0,
+                        };
+                    });
+
+                    setMarketOverview(prev => prev.map(item => {
+                        if (cryptoMap[item.symbol]) {
+                            return { ...item, ...cryptoMap[item.symbol] };
+                        }
+                        return item;
+                    }));
+
+                    setCryptoList(prev => prev.map(item => {
+                        if (cryptoMap[item.symbol]) {
+                            return { ...item, ...cryptoMap[item.symbol] };
+                        }
+                        return item;
+                    }));
+                }
+            } catch (error) {
+                console.error("Failed to fetch live wallet data:", error);
+            }
+        };
+
+        fetchLivePrices();
+        const intervalId = setInterval(fetchLivePrices, 30000); // 30s update interval
+        return () => clearInterval(intervalId);
+    }, []);
+
     return (
         <div className="w-full flex flex-col pb-20 lg:pb-0 min-h-full bg-[#111315] text-white">
             <div className="p-4 lg:p-8 max-w-[1200px] mx-auto w-full flex flex-col gap-6">
@@ -27,7 +90,7 @@ export default function WalletPage() {
                                     0%
                                 </span>
                             </div>
-                            <p className="text-gray-400 text-sm mt-4 font-semibold">This Month (June)</p>
+                            <p className="text-gray-400 text-sm mt-4 font-semibold">This Month</p>
                         </div>
                     </div>
 
@@ -37,12 +100,7 @@ export default function WalletPage() {
                             <h3 className="text-[17px] font-bold text-gray-200">Market Overview</h3>
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 flex-1">
-                            {[
-                                { name: 'Bitcoin', symbol: 'BTC', price: metadata.walletBalances.btc, change: '+1.49%', isUp: true },
-                                { name: 'Ethereum', symbol: 'ETH', price: metadata.walletBalances.eth, change: '+0.46%', isUp: true },
-                                { name: 'Solana', symbol: 'SOL', price: metadata.walletBalances.sol, change: '+5.21%', isUp: true },
-                                { name: 'Cardano', symbol: 'ADA', price: metadata.walletBalances.ada, change: '-1.12%', isUp: false },
-                            ].map((coin, i) => (
+                            {marketOverview.map((coin, i) => (
                                 <div key={i} className="bg-[#111315] border border-white/5 rounded-2xl p-4 flex flex-col justify-between hover:border-white/10 transition-colors">
                                     <div className="flex justify-between items-center mb-4">
                                         <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center shrink-0">
@@ -127,14 +185,7 @@ export default function WalletPage() {
 
                         {/* List Items */}
                         <div className="flex flex-col gap-2 overflow-y-auto custom-scrollbar flex-1 -mx-2 px-2 pb-2">
-                            {[
-                                { icon: 'bitcoin', name: 'Bitcoin (BTC)', date: 'Mar 13, 2026', price: metadata.walletBalances.btc, isUp: true },
-                                { icon: 'ethereum', name: 'Ethereum (ETH)', date: 'Mar 13, 2026', price: metadata.walletBalances.eth, isUp: true },
-                                { icon: 'solana', name: 'Solana (SOL)', date: 'Mar 13, 2026', price: metadata.walletBalances.sol, isUp: true },
-                                { icon: 'cardano', name: 'Cardano (ADA)', date: 'Mar 13, 2026', price: metadata.walletBalances.ada, isUp: false },
-                                { icon: 'ripple', name: 'Ripple (XRP)', date: 'Mar 13, 2026', price: metadata.walletBalances.xrp, isUp: false },
-                                { icon: 'avalanche', name: 'Avalanche (AVAX)', date: 'Mar 13, 2026', price: metadata.walletBalances.avax, isUp: true }
-                            ].map((item, i) => (
+                            {cryptoList.map((item, i) => (
                                 <div key={i} className="grid grid-cols-12 gap-4 items-center bg-white/5 hover:bg-white/10 p-3 rounded-2xl transition-all cursor-pointer shrink-0 border border-transparent hover:border-white/10">
                                     <div className="col-span-6 flex items-center gap-4">
                                         <div className="w-10 h-10 rounded-xl bg-[#111315] flex items-center justify-center shrink-0 border border-white/5 shadow-inner">

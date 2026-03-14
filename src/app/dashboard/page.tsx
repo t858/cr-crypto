@@ -140,8 +140,8 @@ export default function DashboardPage() {
 
             <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4 pr-2">
               {[
-                { title: "Bitcoin Surges Past $71k Amid Pre-Halving Miner Accumulation Data", time: "1 hour ago", src: "Market Watch" },
-                { title: "Ethereum Target Raised to $7,500 by Analysts Pointing to ETFs", time: "2 hours ago", src: "Crypto Insider" },
+                { title: "Bitcoin Surges Amid Pre-Halving Miner Accumulation Data", time: "1 hour ago", src: "Market Watch" },
+                { title: "Ethereum Target Raised by Analysts Pointing to ETFs", time: "2 hours ago", src: "Crypto Insider" },
                 { title: "SEC and CFTC Sign Historic Pact on Derivatives Oversight", time: "5 hours ago", src: "DeFi Pulse" },
                 { title: "Goldman Sachs Revealed as Top Holder of Spot XRP ETFs", time: "8 hours ago", src: "Global Finance" },
                 { title: "Stablecoin Market Projected to Hit $2 Trillion by 2028", time: "12 hours ago", src: "Web3 Daily" },

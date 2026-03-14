@@ -16,7 +16,7 @@ type Article = {
 const MOCK_NEWS: Article[] = [
     {
         id: "1",
-        title: "Bitcoin Surges Past $65,000 Following New ETF Approvals",
+        title: "Bitcoin Surges Following New ETF Approvals",
         excerpt: "Institutional demand continues to drive the market as major funds pour capital into recently approved Bitcoin Exchange Traded Funds.",
         category: "Markets",
         image: "https://images.unsplash.com/photo-1518546305927-5a555bb7020d?q=80&w=800&auto=format&fit=crop",
