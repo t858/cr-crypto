@@ -20,23 +20,23 @@ export interface UserMetadata {
 }
 
 const DEFAULT_METADATA: UserMetadata = {
-    walletTotal: "$124,563.00",
+    walletTotal: "$0.00",
     walletChart: [
-        { label: '01', val: 40 },
-        { label: '02', val: 70 },
-        { label: '03', val: 35 },
-        { label: '04', val: 65 },
-        { label: '05', val: 50 },
-        { label: '06', val: 85 },
-        { label: '07', val: 60 },
+        { label: '01', val: 0 },
+        { label: '02', val: 0 },
+        { label: '03', val: 0 },
+        { label: '04', val: 0 },
+        { label: '05', val: 0 },
+        { label: '06', val: 0 },
+        { label: '07', val: 0 },
     ],
     walletBalances: {
-        btc: "$71,485.37",
-        eth: "$2,125.32",
-        sol: "$90.04",
-        ada: "$0.2699",
-        xrp: "$1.41",
-        avax: "$35.10",
+        btc: "$0.00",
+        eth: "$0.00",
+        sol: "$0.00",
+        ada: "$0.00",
+        xrp: "$0.00",
+        avax: "$0.00",
     }
 };
 
@@ -59,7 +59,8 @@ const DashboardContext = createContext<DashboardContextType | undefined>(undefin
 
 export function DashboardProvider({ children }: { children: ReactNode }) {
     const { data: session } = useSession();
-    const [verificationStep, setVerificationStep] = useState(1);
+    // Default to Step 5 (100% Verified) instead of Step 1
+    const [verificationStep, setVerificationStep] = useState(5);
     const [profileInitials, setProfileInitials] = useState<string | null>(null);
     const [activeModal, setActiveModal] = useState<ModalType>("NONE");
     const [metadata, setMetadata] = useState<UserMetadata>(DEFAULT_METADATA);
