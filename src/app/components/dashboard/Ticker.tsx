@@ -3,19 +3,57 @@
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { useEffect, useRef, useState } from "react";
 
-const TICKER_DATA = [
-    { symbol: "DJ30", price: "47881.85", change: "+0.30%", isUp: true },
-    { symbol: "ETH", price: "2024.1100", change: "-0.31%", isUp: false },
-    { symbol: "EURUSD", price: "1.16263", change: "+0.13%", isUp: true },
+const INITIAL_TICKER_DATA = [
+    { symbol: "DJ30", price: "40321.85", change: "+0.30%", isUp: true },
+    { symbol: "EURUSD", price: "1.08263", change: "+0.13%", isUp: true },
     { symbol: "OIL", price: "83.19", change: "-2.53%", isUp: false },
-    { symbol: "GOLD", price: "5213.65", change: "+0.36%", isUp: true },
-    { symbol: "NSDQ100", price: "25000.00", change: "+0.31%", isUp: true },
-    { symbol: "BTC", price: "64230.12", change: "+1.21%", isUp: true },
-    { symbol: "SOL", price: "145.60", change: "-1.10%", isUp: false },
+    { symbol: "GOLD", price: "2413.65", change: "+0.36%", isUp: true },
+    { symbol: "NSDQ100", price: "18500.00", change: "+0.31%", isUp: true },
+    // Cryptos will be populated dynamically
+    { symbol: "BTC", price: "...", change: "...", isUp: true },
+    { symbol: "ETH", price: "...", change: "...", isUp: true },
+    { symbol: "SOL", price: "...", change: "...", isUp: true },
 ];
 
 export default function Ticker() {
     const scrollRef = useRef<HTMLDivElement>(null);
+    const [tickerData, setTickerData] = useState(INITIAL_TICKER_DATA);
+
+    useEffect(() => {
+        // Fetch live crypto prices from CoinCap
+        const fetchCryptoPrices = async () => {
+            try {
+                const res = await fetch('https://api.coincap.io/v2/assets?limit=10');
+                const { data } = await res.json();
+                
+                if (data && data.length > 0) {
+                    const cryptoMap: Record<string, any> = {};
+                    data.forEach((coin: any) => {
+                        cryptoMap[coin.symbol] = {
+                            price: parseFloat(coin.priceUsd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                            change: `${parseFloat(coin.changePercent24Hr) > 0 ? '+' : ''}${parseFloat(coin.changePercent24Hr).toFixed(2)}%`,
+                            isUp: parseFloat(coin.changePercent24Hr) >= 0
+                        };
+                    });
+
+                    setTickerData(prev => prev.map(item => {
+                        if (cryptoMap[item.symbol]) {
+                            return { ...item, ...cryptoMap[item.symbol] };
+                        }
+                        return item;
+                    }));
+                }
+            } catch (error) {
+                console.error("Failed to fetch live crypto ticker prices:", error);
+            }
+        };
+
+        fetchCryptoPrices();
+        // Refresh prices every 30 seconds
+        const intervalId = setInterval(fetchCryptoPrices, 30000);
+
+        return () => clearInterval(intervalId);
+    }, []);
 
     useEffect(() => {
         // Simple auto-scroll implementation
@@ -37,7 +75,7 @@ export default function Ticker() {
         animationId = requestAnimationFrame(scroll);
 
         return () => cancelAnimationFrame(animationId);
-    }, []);
+    }, [tickerData.length]);
 
     return (
         <div className="w-full bg-[#1b1e22] border-b border-white/5 h-16 shrink-0 flex items-center overflow-hidden">
@@ -48,15 +86,17 @@ export default function Ticker() {
                 style={{ width: '100%' }}
             >
                 <div className="flex items-center h-full min-w-max">
-                    {[...TICKER_DATA, ...TICKER_DATA].map((item, i) => (
+                    {[...tickerData, ...tickerData].map((item, i) => (
                         <div key={i} className="flex items-center gap-6 px-6 border-r border-white/5 h-full">
                             <div className="flex flex-col justify-center">
                                 <span className="text-gray-400 text-xs font-bold">{item.symbol}</span>
                                 <div className="flex items-end gap-2">
                                     <span className="text-white font-semibold text-[15px]">{item.price}</span>
-                                    <span className={`text-[11px] font-bold mb-0.5 ${item.isUp ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
-                                        {item.change}
-                                    </span>
+                                    {item.change !== "..." && (
+                                        <span className={`text-[11px] font-bold mb-0.5 ${item.isUp ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
+                                            {item.change}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                             {/* Tiny inline SVG chart sparkline */}
