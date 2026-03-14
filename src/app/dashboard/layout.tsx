@@ -6,12 +6,14 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 import Logo from "../components/layout/header/logo";
 import { DashboardProvider, useDashboard } from "../components/dashboard/DashboardProvider";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { countries } from "../../utils/countries";
 
 function DashboardLayoutContent({ children }: { children: ReactNode }) {
+    const { data: session } = useSession();
     const {
         verificationStep,
         setVerificationStep,
@@ -114,8 +116,8 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                                 <Icon icon="lucide:user" className="text-white/50" />
                             )}
                         </div>
-                        <div className="font-semibold text-[15px] truncate">
-                            {profileInitials ? "User Account" : "Guest Trader"}
+                        <div className="font-semibold text-[15px] truncate max-w-[150px]" title={session?.user?.name || session?.user?.email || "Trader"}>
+                            {session?.user?.name || session?.user?.email?.split('@')[0] || "Trader"}
                         </div>
                     </div>
 
