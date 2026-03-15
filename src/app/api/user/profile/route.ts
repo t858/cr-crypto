@@ -5,8 +5,8 @@ import { createClient } from "@supabase/supabase-js";
 
 // Server-side Supabase client using Service Role Key (bypasses RLS)
 const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_URL || "https://dummy-url-for-build.supabase.co",
+    process.env.SUPABASE_SERVICE_ROLE_KEY || "dummy-key-for-build"
 );
 
 export async function POST(req: Request) {
