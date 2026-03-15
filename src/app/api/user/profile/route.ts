@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@supabase/supabase-js";
+
+// Server-side Supabase client using Service Role Key (bypasses RLS)
+const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export async function POST(req: Request) {
     try {
@@ -12,9 +18,10 @@ export async function POST(req: Request) {
         }
 
         const userId = (session.user as any).id;
+        const userEmail = session.user.email || "";
+        const userName = session.user.name || "";
         const body = await req.json();
 
-        // Ensure we only extract the specific profile fields we want to allow editing
         const updatedProfile = {
             fullName: body.fullName || "",
             phone: body.phone || "",
@@ -25,21 +32,16 @@ export async function POST(req: Request) {
             photoUrl: body.photoUrl || "",
         };
 
-        // 1. Fetch current metadata from Supabase
-        const { data: userData, error: fetchError } = await supabase
+        // 1. Try to fetch existing metadata
+        const { data: userData } = await supabaseAdmin
             .from('users')
             .select('metadata')
             .eq('id', userId)
-            .single();
-
-        if (fetchError && fetchError.code !== 'PGRST116') { // Ignore not found error here
-            console.error("[PROFILE_API] Error fetching existing data:", fetchError);
-            return NextResponse.json({ message: "Database read error" }, { status: 500 });
-        }
+            .maybeSingle();
 
         const existingMetadata = userData?.metadata || {};
 
-        // 2. Safely merge the new profile into the existing metadata
+        // 2. Merge new profile data into existing metadata
         const mergedMetadata = {
             ...existingMetadata,
             profile: {
@@ -48,18 +50,23 @@ export async function POST(req: Request) {
             }
         };
 
-        // 3. Update the record in Supabase
-        const { error: updateError } = await supabase
+        // 3. Upsert — creates the row if it doesn't exist, updates if it does
+        const { error: upsertError } = await supabaseAdmin
             .from('users')
-            .update({ metadata: mergedMetadata })
-            .eq('id', userId);
+            .upsert({
+                id: userId,
+                email: userEmail,
+                name: updatedProfile.fullName || userName,
+                "passwordHash": "firebase-auth-managed",
+                metadata: mergedMetadata,
+            }, { onConflict: 'id' });
 
-        if (updateError) {
-            console.error("[PROFILE_API] Error updating Supabase:", updateError);
-            return NextResponse.json({ message: "Database update error" }, { status: 500 });
+        if (upsertError) {
+            console.error("[PROFILE_API] Upsert error:", upsertError);
+            return NextResponse.json({ message: "Database save error" }, { status: 500 });
         }
 
-        return NextResponse.json({ message: "Profile updated successfully (Supabase)", profile: updatedProfile }, { status: 200 });
+        return NextResponse.json({ message: "Profile updated successfully", profile: updatedProfile }, { status: 200 });
         
     } catch (error: any) {
         console.error("[PROFILE_API] Server error:", error);

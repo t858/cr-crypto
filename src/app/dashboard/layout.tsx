@@ -110,7 +110,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                 </div>
 
                 {/* Profile Section */}
-                <div className="px-6 flex flex-col gap-4 mt-2 mb-6 cursor-pointer hover:bg-white/5 p-2 -mx-2 rounded-xl transition-colors" onClick={() => (window.location.href = '/dashboard/profile')}>
+                <div className="px-6 flex flex-col gap-4 mt-2 mb-6 cursor-pointer hover:bg-white/5 p-2 -mx-2 rounded-xl transition-colors" onClick={() => (window.location.href = '/dashboard/account')}>
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-full overflow-hidden border border-white/10 shrink-0 bg-[#3b82f6] flex items-center justify-center font-bold text-xl text-white uppercase relative">
                             {metadata?.profile?.photoUrl ? (
@@ -176,6 +176,14 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                             <Icon icon="lucide:bell" className="text-lg opacity-80" />
                             <span>Notifications</span>
                         </button>
+                        <Link href="/dashboard/account" className={`flex items-center gap-3 px-4 py-[10px] rounded-lg transition-colors text-sm ${isActive('/dashboard/account') ? 'bg-white/5 text-white' : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'}`}>
+                            <Icon icon="lucide:user-circle" className="text-lg opacity-80" />
+                            <span>My Account</span>
+                        </Link>
+                        <Link href="/dashboard/profile" className={`flex items-center gap-3 px-4 py-[10px] rounded-lg transition-colors text-sm ${isActive('/dashboard/profile') ? 'bg-white/5 text-white' : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'}`}>
+                            <Icon icon="lucide:settings" className="text-lg opacity-80" />
+                            <span>Edit Profile</span>
+                        </Link>
                         <Link href="#" className="flex items-center gap-3 px-4 py-[10px] text-gray-400 hover:text-gray-200 hover:bg-white/5 rounded-lg transition-colors text-sm opacity-50 cursor-not-allowed">
                             <Icon icon="lucide:gem" className="text-lg opacity-80" />
                             <span>CR Crypto Club</span>
@@ -233,7 +241,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                     <div className="flex items-center gap-3">
                         <Logo />
                         <div className="h-6 w-px bg-white/10 hidden sm:block"></div>
-                        <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => (window.location.href = '/dashboard/profile')}>
+                        <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => (window.location.href = '/dashboard/account')}>
                             <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 shrink-0 bg-[#3b82f6] flex items-center justify-center font-bold text-sm text-white uppercase relative">
                                 {metadata?.profile?.photoUrl ? (
                                     <img src={metadata.profile.photoUrl} alt="Profile" className="w-full h-full object-cover" />
@@ -272,6 +280,10 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                     <Link href="/dashboard/wallet" className={`flex flex-col items-center gap-1 transition-colors ${isActive('/dashboard/wallet') ? 'text-[#1e88e5]' : 'text-gray-400 hover:text-white'}`}>
                         <Icon icon="lucide:wallet" className="text-xl" />
                         <span className="text-[10px] uppercase font-medium">Wallet</span>
+                    </Link>
+                    <Link href="/dashboard/account" className={`flex flex-col items-center gap-1 transition-colors ${isActive('/dashboard/account') || isActive('/dashboard/profile') ? 'text-[#1e88e5]' : 'text-gray-400 hover:text-white'}`}>
+                        <Icon icon="lucide:user-circle" className="text-xl" />
+                        <span className="text-[10px] uppercase font-medium">Account</span>
                     </Link>
                 </nav>
 

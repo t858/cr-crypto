@@ -95,7 +95,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
                 .from('users')
                 .select('metadata')
                 .eq('id', userId)
-                .single();
+                .maybeSingle();
 
             if (error) {
                 console.error("Supabase fetch error:", error);
