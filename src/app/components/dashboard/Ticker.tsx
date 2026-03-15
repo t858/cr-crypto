@@ -23,16 +23,16 @@ export default function Ticker() {
         // Fetch live crypto prices from CoinCap
         const fetchCryptoPrices = async () => {
             try {
-                const res = await fetch('https://api.coincap.io/v2/assets?limit=10');
-                const { data } = await res.json();
+                const res = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=false');
+                const data = await res.json();
                 
                 if (data && data.length > 0) {
                     const cryptoMap: Record<string, any> = {};
                     data.forEach((coin: any) => {
-                        cryptoMap[coin.symbol] = {
-                            price: parseFloat(coin.priceUsd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-                            change: `${parseFloat(coin.changePercent24Hr) > 0 ? '+' : ''}${parseFloat(coin.changePercent24Hr).toFixed(2)}%`,
-                            isUp: parseFloat(coin.changePercent24Hr) >= 0
+                        cryptoMap[coin.symbol.toUpperCase()] = {
+                            price: parseFloat(coin.current_price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                            change: `${coin.price_change_percentage_24h > 0 ? '+' : ''}${coin.price_change_percentage_24h?.toFixed(2) || '0.00'}%`,
+                            isUp: (coin.price_change_percentage_24h || 0) >= 0
                         };
                     });
 

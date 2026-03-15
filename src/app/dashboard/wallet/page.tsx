@@ -29,15 +29,15 @@ export default function WalletPage() {
     useEffect(() => {
         const fetchLivePrices = async () => {
             try {
-                const res = await fetch('https://api.coincap.io/v2/assets?limit=20');
-                const { data } = await res.json();
+                const res = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&sparkline=false');
+                const data = await res.json();
                 
                 if (data && data.length > 0) {
                     const cryptoMap: Record<string, any> = {};
                     data.forEach((coin: any) => {
-                        const price = parseFloat(coin.priceUsd);
-                        const change24h = parseFloat(coin.changePercent24Hr);
-                        cryptoMap[coin.symbol] = {
+                        const price = coin.current_price;
+                        const change24h = coin.price_change_percentage_24h || 0;
+                        cryptoMap[coin.symbol.toUpperCase()] = {
                             price: price < 0.01 ? `$${price.toFixed(5)}` : `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
                             change: `${change24h > 0 ? '+' : ''}${change24h.toFixed(2)}%`,
                             isUp: change24h >= 0,
