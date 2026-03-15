@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { Icon } from "@iconify/react/dist/iconify.js";
@@ -53,23 +52,24 @@ export default function AdminUserEditor({ userId }: { userId: string }) {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const docRef = doc(db, "users", userId);
-                const docSnap = await getDoc(docRef);
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('email, metadata')
+                    .eq('id', userId)
+                    .single();
 
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
+                if (error || !data) {
+                    toast.error("User document not found natively in Supabase.");
+                    setUserEmail("Orphaned Auth Record");
+                } else {
                     setUserEmail(data.email || "Unknown User");
-                    // Deep merge fetched metadata with defaults to ensure schema safety
                     setMetadata({
                         ...DEFAULT_METADATA,
                         ...(data.metadata || {})
                     });
-                } else {
-                    toast.error("User document not found natively in Firestore.");
-                    setUserEmail("Orphaned Auth Record");
                 }
             } catch (error) {
-                console.error("Firestore error:", error);
+                console.error("Supabase error:", error);
                 toast.error("Failed to load user metadata");
             }
             setLoading(false);
@@ -112,11 +112,13 @@ export default function AdminUserEditor({ userId }: { userId: string }) {
     const saveToSupabase = async () => {
         setSaving(true);
         try {
-            const userRef = doc(db, "users", userId);
-            // using setDoc with merge to ensure the document exists if it was skipped 
-            // during an auth-only signup flow
-            await setDoc(userRef, { metadata }, { merge: true });
-            toast.success("User Dashboard Live Updated in Firestore");
+            const { error } = await supabase
+                .from('users')
+                .update({ metadata })
+                .eq('id', userId);
+
+            if (error) throw error;
+            toast.success("User Dashboard Live Updated in Supabase");
         } catch (error) {
             console.error("Failed to save changes:", error);
             toast.error("Failed to save DB changes");

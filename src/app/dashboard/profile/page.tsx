@@ -4,8 +4,7 @@ import { useState, useRef } from "react";
 import { useDashboard } from "@/app/components/dashboard/DashboardProvider";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import toast from "react-hot-toast";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { storage } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { countries } from "@/utils/countries";
 
 export default function ProfilePage() {
@@ -31,7 +30,7 @@ export default function ProfilePage() {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
@@ -48,32 +47,37 @@ export default function ProfilePage() {
         }
 
         setIsUploading(true);
-        const fileExtension = file.name.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExtension}`;
-        const storageRef = ref(storage, `profile_pictures/${fileName}`);
+        setUploadProgress(20); // Pseudo-progress
 
-        const uploadTask = uploadBytesResumable(storageRef, file);
+        try {
+            const fileExtension = file.name.split('.').pop();
+            const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExtension}`;
+            
+            setUploadProgress(40);
+            
+            const { data, error } = await supabase.storage
+                .from('avatars')
+                .upload(fileName, file, { upsert: true });
 
-        uploadTask.on(
-            'state_changed',
-            (snapshot) => {
-                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                setUploadProgress(progress);
-            },
-            (error) => {
-                console.error("Upload error:", error);
-                toast.error("Failed to upload image. Please try again.");
-                setIsUploading(false);
-            },
-            async () => {
-                // Upload completed successfully, get download URL
-                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                setFormData(prev => ({ ...prev, photoUrl: downloadURL }));
-                toast.success("Profile picture uploaded!");
+            if (error) throw error;
+            setUploadProgress(80);
+
+            const { data: publicUrlData } = supabase.storage
+                .from('avatars')
+                .getPublicUrl(data.path);
+
+            setFormData(prev => ({ ...prev, photoUrl: publicUrlData.publicUrl }));
+            toast.success("Profile picture uploaded to Supabase!");
+            setUploadProgress(100);
+        } catch (error: any) {
+            console.error("Upload error:", error);
+            toast.error("Failed to upload image. Please try again.");
+        } finally {
+            setTimeout(() => {
                 setIsUploading(false);
                 setUploadProgress(0);
-            }
-        );
+            }, 500);
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {

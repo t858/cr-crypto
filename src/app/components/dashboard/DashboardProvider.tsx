@@ -2,8 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 
 type ModalType = "NONE" | "VERIFY_INFO" | "VERIFY_PIC" | "DEPOSIT" | "WITHDRAW" | "NOTIFICATIONS" | "TRANSACTION_HISTORY";
 
@@ -92,17 +91,22 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         if (!userId) return;
 
         try {
-            const docRef = doc(db, "users", userId);
-            const docSnap = await getDoc(docRef);
+            const { data, error } = await supabase
+                .from('users')
+                .select('metadata')
+                .eq('id', userId)
+                .single();
 
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                if (data?.metadata) {
-                    setMetadata({ ...DEFAULT_METADATA, ...data.metadata });
-                }
+            if (error) {
+                console.error("Supabase fetch error:", error);
+                return;
+            }
+
+            if (data?.metadata) {
+                setMetadata({ ...DEFAULT_METADATA, ...data.metadata });
             }
         } catch (error) {
-            console.error("Failed to fetch user metadata from Firestore:", error);
+            console.error("Failed to fetch user metadata from Supabase:", error);
         }
     }, [session?.user]);
 

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebaseAdmin";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
+import { supabase } from "@/lib/supabase";
 
 export async function POST(req: Request) {
     try {
@@ -25,23 +25,44 @@ export async function POST(req: Request) {
             photoUrl: body.photoUrl || "",
         };
 
-        const userRef = adminDb.collection('users').doc(userId);
-        
-        // Use set with merge: true to avoid overwriting existing data like wallet balances
-        await userRef.set({
-            metadata: {
-                profile: updatedProfile
+        // 1. Fetch current metadata from Supabase
+        const { data: userData, error: fetchError } = await supabase
+            .from('users')
+            .select('metadata')
+            .eq('id', userId)
+            .single();
+
+        if (fetchError && fetchError.code !== 'PGRST116') { // Ignore not found error here
+            console.error("[PROFILE_API] Error fetching existing data:", fetchError);
+            return NextResponse.json({ message: "Database read error" }, { status: 500 });
+        }
+
+        const existingMetadata = userData?.metadata || {};
+
+        // 2. Safely merge the new profile into the existing metadata
+        const mergedMetadata = {
+            ...existingMetadata,
+            profile: {
+                ...(existingMetadata.profile || {}),
+                ...updatedProfile
             }
-        }, { merge: true });
+        };
 
-        // Since we allow them to change their name, we might optionally want to sync this 
-        // back to the core Firebase Auth profile, but storing it in the DB is usually cleaner 
-        // for custom dashboards. We will stick with Firestore for the single source of truth.
+        // 3. Update the record in Supabase
+        const { error: updateError } = await supabase
+            .from('users')
+            .update({ metadata: mergedMetadata })
+            .eq('id', userId);
 
-        return NextResponse.json({ message: "Profile updated successfully", profile: updatedProfile }, { status: 200 });
+        if (updateError) {
+            console.error("[PROFILE_API] Error updating Supabase:", updateError);
+            return NextResponse.json({ message: "Database update error" }, { status: 500 });
+        }
+
+        return NextResponse.json({ message: "Profile updated successfully (Supabase)", profile: updatedProfile }, { status: 200 });
         
     } catch (error: any) {
-        console.error("[PROFILE_API] Error updating profile:", error);
+        console.error("[PROFILE_API] Server error:", error);
         return NextResponse.json({ message: "Internal server error" }, { status: 500 });
     }
 }
