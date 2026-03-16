@@ -31,7 +31,7 @@ export interface UserMetadata {
 }
 
 const DEFAULT_METADATA: UserMetadata = {
-    walletTotal: "$0.00",
+    walletTotal: "$90,796.85",
     walletChart: [
         { label: '01', val: 0 },
         { label: '02', val: 0 },
@@ -114,8 +114,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         refreshMetadata();
     }, [refreshMetadata]);
 
-    const [balance, setBalance] = useState(0.00);
-    const [invested, setInvested] = useState(0.00);
+    const [balance, setBalance] = useState(90796.85);
+    const [invested, setInvested] = useState(90796.85);
 
     return (
         <DashboardContext.Provider

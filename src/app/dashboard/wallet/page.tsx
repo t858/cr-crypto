@@ -129,7 +129,7 @@ export default function WalletPage() {
                             <div>
                                 <h3 className="text-[17px] font-bold text-gray-200 mb-4">Trading Profit Report</h3>
                                 <div className="flex items-center gap-4">
-                                    <h1 className="text-4xl font-extrabold text-white tracking-tight">{metadata.walletTotal}</h1>
+                                    <h1 className="text-4xl font-extrabold text-white tracking-tight">$0.00</h1>
                                     <span className="flex items-center text-[#22c55e] font-bold text-sm bg-transparent px-0 py-0.5 rounded">
                                         0%
                                     </span>
