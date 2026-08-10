@@ -103,6 +103,9 @@ const SignUp = () => {
             required
             className='w-full rounded-md border border-white/20 border-solid bg-transparent px-5 py-3 text-base text-dark outline-hidden transition placeholder:text-grey focus:border-primary focus-visible:shadow-none text-white'
           />
+          <p className="text-[11px] text-gray-400 mt-1 pl-1">
+            Must be 8+ characters with at least 1 capital letter, 1 number, and 1 special char (e.g. @, $, _, !).
+          </p>
         </div>
         <div className='mb-9'>
           <button

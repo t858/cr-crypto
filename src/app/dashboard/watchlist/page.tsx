@@ -117,14 +117,14 @@ export default function WatchlistPage() {
                             className="grid grid-cols-[60px_200px_1fr_1fr_1fr_1fr_1.5fr_1.5fr_1.5fr_120px] gap-4 px-6 items-center border-b border-white/5 hover:bg-white/[0.02] transition-colors py-[14px] cursor-pointer"
                         >
                             <div className="flex items-center gap-3">
-                                <Icon icon="lucide:zap" className="text-[#1e88e5] text-[15px]" />
+                                <Icon icon="lucide:zap" className="text-[#FF4520] text-[15px]" />
                                 <span className="text-[14px] text-white font-bold">{coin.id}</span>
                             </div>
 
                             {/* Name Column */}
                             <div className="flex items-center gap-3">
                                 {/* Fake Logo Placeholder */}
-                                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${idx % 2 === 0 ? 'bg-[#1e88e5] text-white' : 'bg-[#e0e0e0] text-black'} shadow-sm`}>
+                                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${idx % 2 === 0 ? 'bg-[#FF4520] text-white' : 'bg-[#e0e0e0] text-black'} shadow-sm`}>
                                     {coin.symbol[0]}
                                 </div>
                                 <div className="flex items-center gap-2">

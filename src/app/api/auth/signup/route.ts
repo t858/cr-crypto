@@ -1,19 +1,21 @@
 import { NextResponse } from "next/server";
+import { getUsers, saveUsers } from "@/lib/jsonbin";
+import { DEFAULT_DASHBOARD_CONFIG } from "@/app/types/dashboardConfig";
+import bcrypt from "bcryptjs";
 
-// Enforce strong passwords constraint
 const validatePassword = (password: string) => {
-    const minLength = 8; // Industry standard minimum
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasLowerCase = /[a-z]/.test(password);
-    const hasNumbers = /\d/.test(password);
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
-    if (password.length < minLength) return "Password must be at least 8 characters long.";
-    if (!hasUpperCase) return "Password must contain at least one uppercase letter.";
-    if (!hasLowerCase) return "Password must contain at least one lowercase letter.";
-    if (!hasNumbers) return "Password must contain at least one number.";
-    if (!hasSpecialChar) return "Password must contain at least one special character.";
-
+    if (!password || password.length < 8) {
+        return "Password must be at least 8 characters long.";
+    }
+    if (!/[A-Z]/.test(password)) {
+        return "Password must contain at least one uppercase capital letter.";
+    }
+    if (!/[0-9]/.test(password)) {
+        return "Password must contain at least one number.";
+    }
+    if (!/[^A-Za-z0-9]/.test(password)) {
+        return "Password must contain at least one special character (e.g. @, $, _, !, etc.).";
+    }
     return null;
 };
 
@@ -21,9 +23,8 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
         
-        // Basic input sanitization
         const rawEmail = body.email?.trim();
-        const rawPassword = body.password; // Do not trim passwords
+        const rawPassword = body.password;
         const rawName = body.name?.trim() || "User";
 
         if (!rawEmail || !rawPassword) {
@@ -36,69 +37,70 @@ export async function POST(req: Request) {
 
         const email = rawEmail.toLowerCase();
 
-        // Validate password strength
         const passwordError = validatePassword(rawPassword);
         if (passwordError) {
             return NextResponse.json({ message: passwordError }, { status: 400 });
         }
 
-        const firebaseApiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
-        if (!firebaseApiKey) {
-            console.error("[AUTH] Firebase API Key is not configured.");
-            return NextResponse.json({ message: "Internal server error: missing configuration" }, { status: 500 });
-        }
-
-        console.log("[DEBUG SIGNUP] Attempting to create email:", email);
-        console.log("[DEBUG SIGNUP] Password length:", rawPassword?.length);
-
-        // 1. Create User via Firebase Auth REST API
-        const createRes = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${firebaseApiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                email,
-                password: rawPassword,
-                returnSecureToken: true
-            })
-        });
-
-        const createData = await createRes.json();
-
-        if (!createRes.ok) {
-            console.error("[FIREBASE_AUTH] Signup failed:", createData.error);
-            const errorMsg = createData.error?.message === "EMAIL_EXISTS" 
-                ? "An account with this email already exists" 
-                : "Failed to create user account";
-            const statusCode = createData.error?.message === "EMAIL_EXISTS" ? 409 : 400;
-            return NextResponse.json({ message: errorMsg }, { status: statusCode });
-        }
-
-        // 2. Update Display Name using the returned idToken
-        const updateRes = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:update?key=${firebaseApiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                idToken: createData.idToken,
-                displayName: rawName,
-                returnSecureToken: false
-            })
-        });
-
-        if (!updateRes.ok) {
-            console.warn("[FIREBASE_AUTH] Non-critical: Failed to update display name during signup.");
-        }
-
-        return NextResponse.json({
-            message: "User created successfully",
-            user: { 
-                id: createData.localId,
-                email: createData.email,
-                name: rawName
+        try {
+            const users = await getUsers();
+            
+            if (users.some((u: any) => u.email === email)) {
+                return NextResponse.json({ message: "An account with this email already exists" }, { status: 409 });
             }
-        }, { status: 201 });
+
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(rawPassword, salt);
+
+            const initialMetadata = {
+                ...DEFAULT_DASHBOARD_CONFIG,
+                profile: {
+                    fullName: rawName,
+                    phone: "",
+                    country: "",
+                    address: "",
+                    city: "",
+                    dob: "",
+                    photoUrl: "",
+                    idDocumentUrl: ""
+                }
+            };
+
+            const newUser = {
+                id: "usr_" + Math.random().toString(36).substring(2, 9),
+                email,
+                password: hashedPassword,
+                name: rawName,
+                role: "user",
+                metadata: initialMetadata,
+                created: new Date().toISOString()
+            };
+
+            users.push(newUser);
+            
+            const saved = await saveUsers(users);
+
+            if (!saved) {
+                console.error("[SIGNUP_API] Could not persist user to remote JSONBin database.");
+                return NextResponse.json({ message: "Failed to save account to JSONBin database. Please check connection and try again." }, { status: 500 });
+            }
+
+            return NextResponse.json({
+                message: "User created successfully",
+                user: { 
+                    id: newUser.id,
+                    email: newUser.email,
+                    name: rawName
+                }
+            }, { status: 201 });
+
+        } catch (authError: any) {
+            console.error("[JSONBIN_AUTH] Signup failed:", authError?.message);
+            return NextResponse.json({ message: "Failed to create user" }, { status: 500 });
+        }
 
     } catch (error: any) {
-        console.error("[AUTH_API] Unhandled Signup Error:", error);
-        return NextResponse.json({ message: "An unexpected error occurred processing your request" }, { status: 500 });
+        console.error("[SIGNUP_API] Error:", error);
+        return NextResponse.json({ message: error.message || "An unexpected error occurred during signup" }, { status: 500 });
     }
 }

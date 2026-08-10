@@ -21,12 +21,13 @@ const Trade = () => {
             <p className='lg:text-lg font-normal text-lightblue text-center sm:text-start'>
               Monitor your copy trading portfolio on the go with our secure, mobile-friendly platform. Track expert performances, manage your investments, and stay connected to the market 24/7 — no limits, no downtime.
             </p>
-            <div className='flex justify-between'>
+            <div className='flex justify-between items-center'>
               <Image
                 src={'/images/trade/mac.svg'}
                 alt='macOS-image'
                 width={61}
                 height={105}
+                style={{ width: 'auto', height: 'auto' }}
               />
               <div className='verticalLine'></div>
               <Image
@@ -34,6 +35,7 @@ const Trade = () => {
                 alt='appstore-image'
                 width={80}
                 height={105}
+                style={{ width: 'auto', height: 'auto' }}
               />
               <div className='verticalLine'></div>
               <Image
@@ -41,6 +43,7 @@ const Trade = () => {
                 alt='windows-image'
                 width={80}
                 height={105}
+                style={{ width: 'auto', height: 'auto' }}
               />
               <div className='verticalLine'></div>
               <Image
@@ -48,6 +51,7 @@ const Trade = () => {
                 alt='android-image'
                 width={71}
                 height={105}
+                style={{ width: 'auto', height: 'auto' }}
               />
             </div>
           </div>

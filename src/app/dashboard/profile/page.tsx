@@ -5,13 +5,12 @@ import { useDashboard } from "@/app/components/dashboard/DashboardProvider";
 import { useSession } from "next-auth/react";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import toast from "react-hot-toast";
-import { supabase } from "@/lib/supabase";
 import { countries } from "@/utils/countries";
+import { uploadFiles } from "@/lib/uploadthing";
 
 export default function ProfilePage() {
     const { metadata, refreshMetadata } = useDashboard();
     const { data: session } = useSession();
-    
     
     // Form state populated with existing metadata if available
     const [formData, setFormData] = useState({
@@ -27,8 +26,10 @@ export default function ProfilePage() {
     const [isSaving, setIsSaving] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Sync form data when metadata arrives from Supabase (async fetch)
+    // Sync form data when metadata arrives
     useEffect(() => {
         if (metadata?.profile) {
             setFormData({
@@ -42,8 +43,6 @@ export default function ProfilePage() {
             });
         }
     }, [metadata]);
-    const [uploadProgress, setUploadProgress] = useState(0);
-    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -53,44 +52,31 @@ export default function ProfilePage() {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Ensure it's an image
         if (!file.type.startsWith('image/')) {
             toast.error("Please upload a valid image file.");
             return;
         }
 
-        // Limit size to 5MB
         if (file.size > 5 * 1024 * 1024) {
             toast.error("Image must be smaller than 5MB.");
             return;
         }
 
         setIsUploading(true);
-        setUploadProgress(20); // Pseudo-progress
+        setUploadProgress(40);
 
         try {
-            const fileExtension = file.name.split('.').pop();
-            const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExtension}`;
-            
-            setUploadProgress(40);
-            
-            const { data, error } = await supabase.storage
-                .from('avatars')
-                .upload(fileName, file, { upsert: true });
-
-            if (error) throw error;
-            setUploadProgress(80);
-
-            const { data: publicUrlData } = supabase.storage
-                .from('avatars')
-                .getPublicUrl(data.path);
-
-            setFormData(prev => ({ ...prev, photoUrl: publicUrlData.publicUrl }));
-            toast.success("Profile picture uploaded to Supabase!");
-            setUploadProgress(100);
-        } catch (error: any) {
-            console.error("Upload error:", error);
-            toast.error("Failed to upload image. Please try again.");
+            const res = await uploadFiles("profilePicture", { files: [file] });
+            if (res && res[0]?.url) {
+                setUploadProgress(100);
+                setFormData(prev => ({ ...prev, photoUrl: res[0].url }));
+                toast.success("Profile picture uploaded to cloud!");
+            } else {
+                throw new Error("Cloud upload failed");
+            }
+        } catch (uploadErr: any) {
+            console.error("UploadThing cloud upload error:", uploadErr);
+            toast.error("Cloud upload failed. Please make sure UPLOADTHING_TOKEN is set in .env.local!");
         } finally {
             setTimeout(() => {
                 setIsUploading(false);
@@ -116,7 +102,6 @@ export default function ProfilePage() {
             }
 
             setShowSuccess(true);
-            // Refresh global dashboard context to reflect new name/image in sidebars
             await refreshMetadata();
         } catch (error: any) {
             toast.error(error.message);
@@ -129,7 +114,7 @@ export default function ProfilePage() {
         <div className="p-4 md:p-8 max-w-4xl max-w-content mx-auto animate-in fade-in duration-500">
             <div className="mb-8">
                 <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">My Profile</h1>
-                <p className="text-gray-400">Manage your personal information and configuration.</p>
+                <p className="text-gray-400">Manage your personal information and account settings.</p>
             </div>
 
             <form onSubmit={handleSubmit} className="bg-[#1b1e22] border border-white/5 rounded-2xl overflow-hidden shadow-xl">
@@ -144,7 +129,6 @@ export default function ProfilePage() {
                                 <Icon icon="lucide:user" className="text-6xl text-gray-600" />
                             )}
                             
-                            {/* Upload Overlay */}
                             <button
                                 type="button"
                                 onClick={() => fileInputRef.current?.click()}

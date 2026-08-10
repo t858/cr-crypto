@@ -65,7 +65,7 @@ const Header: React.FC = () => {
     }
   }, [navbarOpen])
 
-  if (pathname?.startsWith('/dashboard') || pathname?.startsWith('/signin') || pathname?.startsWith('/signup')) {
+  if (pathname === '/' || pathname?.startsWith('/dashboard') || pathname?.startsWith('/signin') || pathname?.startsWith('/signup')) {
     return null;
   }
 

@@ -88,7 +88,7 @@ export default function NewsPage() {
             <div className="bg-[#1b1e22] border-b border-white/5 py-8 px-4 lg:px-8">
                 <div className="max-w-[1200px] mx-auto">
                     <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
-                        <Icon icon="lucide:globe" className="text-[#1e88e5]" />
+                        <Icon icon="lucide:globe" className="text-[#FF4520]" />
                         Crypto Insight Daily
                     </h1>
                     <p className="text-gray-400 text-sm max-w-xl leading-relaxed">
@@ -102,7 +102,7 @@ export default function NewsPage() {
                                 key={cat}
                                 onClick={() => setActiveCategory(cat)}
                                 className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors border ${activeCategory === cat
-                                        ? "bg-[#1e88e5] text-white border-[#1e88e5]"
+                                        ? "bg-[#FF4520] text-white border-[#FF4520]"
                                         : "bg-transparent text-gray-400 border-white/10 hover:border-white/30 hover:text-white"
                                     }`}
                             >
@@ -123,7 +123,7 @@ export default function NewsPage() {
                         <p>No recent news available for the "{activeCategory}" category.</p>
                         <button
                             onClick={() => setActiveCategory("All News")}
-                            className="mt-6 text-[#1e88e5] hover:text-white underline transition-colors"
+                            className="mt-6 text-[#FF4520] hover:text-white underline transition-colors"
                         >
                             View All News
                         </button>
@@ -141,7 +141,7 @@ export default function NewsPage() {
                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                                     />
                                     <div className="absolute top-4 left-4 z-20">
-                                        <span className="bg-[#1e88e5] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">
+                                        <span className="bg-[#FF4520] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">
                                             Featured • {featuredArticle.category}
                                         </span>
                                     </div>
@@ -151,7 +151,7 @@ export default function NewsPage() {
                                         <Icon icon="lucide:clock" className="text-sm" />
                                         {featuredArticle.time}
                                     </div>
-                                    <h2 className="text-2xl lg:text-3xl font-bold text-white mb-4 group-hover:text-[#1e88e5] transition-colors leading-tight">
+                                    <h2 className="text-2xl lg:text-3xl font-bold text-white mb-4 group-hover:text-[#FF4520] transition-colors leading-tight">
                                         {featuredArticle.title}
                                     </h2>
                                     <p className="text-gray-400 leading-relaxed mb-6 flex-1">
@@ -164,7 +164,7 @@ export default function NewsPage() {
                                             </div>
                                             <span className="text-sm font-medium text-gray-300">{featuredArticle.author}</span>
                                         </div>
-                                        <button className="text-[#1e88e5] group-hover:text-white transition-colors">
+                                        <button className="text-[#FF4520] group-hover:text-white transition-colors">
                                             <Icon icon="lucide:arrow-right" className="text-xl -rotate-45 group-hover:rotate-0 transition-transform" />
                                         </button>
                                     </div>
@@ -193,7 +193,7 @@ export default function NewsPage() {
                                             <Icon icon="lucide:clock" />
                                             {article.time}
                                         </div>
-                                        <h3 className="text-lg font-bold text-white mb-2 group-hover:text-[#1e88e5] transition-colors leading-snug line-clamp-2">
+                                        <h3 className="text-lg font-bold text-white mb-2 group-hover:text-[#FF4520] transition-colors leading-snug line-clamp-2">
                                             {article.title}
                                         </h3>
                                         <p className="text-gray-400 text-sm leading-relaxed mb-4 line-clamp-2 flex-1">
@@ -201,7 +201,7 @@ export default function NewsPage() {
                                         </p>
                                         <div className="flex items-center justify-between pt-4 border-t border-white/5 mt-auto">
                                             <span className="text-xs font-medium text-gray-500">{article.author}</span>
-                                            <button className="text-gray-400 group-hover:text-[#1e88e5] transition-colors">
+                                            <button className="text-gray-400 group-hover:text-[#FF4520] transition-colors">
                                                 <Icon icon="lucide:bookmark" />
                                             </button>
                                         </div>
@@ -212,7 +212,7 @@ export default function NewsPage() {
 
                         {filteredNews.length > 0 && (
                             <div className="mt-12 flex justify-center">
-                                <button className="bg-transparent border border-[#1e88e5] text-white hover:bg-[#1e88e5]/10 font-bold py-3 px-8 rounded-full transition-colors text-sm tracking-wide">
+                                <button className="bg-transparent border border-[#FF4520] text-white hover:bg-[#FF4520]/10 font-bold py-3 px-8 rounded-full transition-colors text-sm tracking-wide">
                                     Load More Articles
                                 </button>
                             </div>

@@ -43,76 +43,84 @@ const SignupPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center pt-32 pb-12 bg-[#07011d] relative z-10 px-4">
-      <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 z-0"></div>
-      <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#1e88e5]/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/3 z-0"></div>
-
+    <div className="min-h-screen flex items-center justify-center py-16 bg-gray-50 relative z-10 px-4">
       {/* Back to Home Button */}
       <Link 
         href="/" 
-        className="absolute top-8 left-8 z-50 flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-gray-300 hover:text-white transition-all backdrop-blur-md"
+        className="absolute top-6 left-6 z-50 flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-100 border border-gray-200 rounded-xl text-gray-700 hover:text-black transition-all shadow-xs"
       >
         <Icon icon="lucide:arrow-left" className="text-lg" />
-        <span className="font-medium text-sm">Back to Home</span>
+        <span className="font-semibold text-sm">Back to Home</span>
       </Link>
 
-      <div className="relative mx-auto w-full max-w-md bg-[#11062b] overflow-hidden rounded-2xl backdrop-blur-md px-8 pt-10 pb-8 z-10 border border-white/10 shadow-2xl">
-        <div className="mb-6 text-center">
-          <h2 className="text-3xl font-bold text-white mb-2 tracking-tight">Create Account</h2>
-          <p className="text-gray-400 text-sm">Join us to start trading securely</p>
+      <div className="relative mx-auto w-full max-w-md bg-[#0B0E11] text-white rounded-3xl p-8 sm:p-10 z-10 border border-gray-800 shadow-2xl">
+        {/* Pionex Logo */}
+        <div className="flex justify-center mb-8">
+          <Link href="/">
+            <img
+              src="/images/logo/pionex-logo.png"
+              alt="Pionex Logo"
+              className="h-10 w-auto object-contain brightness-125"
+            />
+          </Link>
+        </div>
+
+        <div className="mb-8 text-center">
+          <h2 className="text-2xl sm:text-3xl font-black text-white mb-2 tracking-tight">Create Account</h2>
+          <p className="text-gray-400 text-sm">Join 5,000,000+ traders & claim up to 10,000 USDT rewards</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5 px-1">Full Name</label>
+            <label className="block text-xs font-bold text-gray-300 mb-2 px-1">Full Name</label>
             <input
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full bg-[#1b1136] border border-white/10 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-[#1e88e5] transition-colors"
+              className="w-full bg-[#161B22] border border-gray-800 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-[#FF4520] transition-colors text-sm"
               placeholder="John Doe"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5 px-1">Email Address</label>
+            <label className="block text-xs font-bold text-gray-300 mb-2 px-1">Email Address</label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-[#1b1136] border border-white/10 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-[#1e88e5] transition-colors"
+              className="w-full bg-[#161B22] border border-gray-800 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-[#FF4520] transition-colors text-sm"
               placeholder="name@example.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5 px-1">Secure Password</label>
+            <label className="block text-xs font-bold text-gray-300 mb-2 px-1">Secure Password</label>
             <input
               type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-[#1b1136] border border-white/10 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-[#1e88e5] transition-colors"
+              className="w-full bg-[#161B22] border border-gray-800 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-[#FF4520] transition-colors text-sm"
               placeholder="••••••••"
             />
             <p className="text-[11px] text-gray-500 mt-2 px-1 leading-relaxed">
-              Must be at least 8 characters containing 1 uppercase, 1 lowercase, 1 number, and 1 special symbol.
+              Must be at least 10 characters containing 1 uppercase, 1 lowercase, 1 number, and 1 special symbol.
             </p>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 mt-4 rounded-xl font-bold transition-all bg-[#1e88e5] hover:bg-[#1a73e8] text-white disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center"
+            className="w-full py-3.5 mt-4 rounded-xl font-bold transition-all bg-[#FF4520] hover:bg-[#e03a17] text-white shadow-lg shadow-[#FF4520]/25 disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center text-base"
           >
             {loading ? "Creating account..." : "Sign Up"}
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-400 mt-6">
-          Already have an account? <Link href="/signin" className="text-[#1e88e5] hover:text-[#5cb8ff] font-medium transition-colors">Sign in</Link>
+        <p className="text-center text-sm text-gray-400 mt-8">
+          Already have an account? <Link href="/signin" className="text-[#FF4520] font-bold hover:underline">Log in</Link>
         </p>
       </div>
     </div>

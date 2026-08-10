@@ -6,11 +6,12 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 import Logo from "../components/layout/header/logo";
 import { DashboardProvider, useDashboard } from "../components/dashboard/DashboardProvider";
 import { usePathname } from "next/navigation";
-import { useSession } from "next-auth/react";
-
+import { useSession, signOut } from "next-auth/react";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { countries } from "../../utils/countries";
+import { uploadFiles } from "@/lib/uploadthing";
+import { markNotificationsAsReadAction, deleteNotificationAction } from "@/app/admin/actions";
 
 function DashboardLayoutContent({ children }: { children: ReactNode }) {
     const { data: session } = useSession();
@@ -23,10 +24,45 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
         setActiveModal,
         balance,
         setBalance,
-        metadata
+        metadata,
+        setMetadata,
+        refreshMetadata
     } = useDashboard();
     const pathname = usePathname();
     const isActive = (path: string) => pathname === path;
+
+    const notifications = metadata.notifications || [];
+    const unreadCount = notifications.filter((n) => !n.read).length;
+
+    const handleMarkAllAsRead = async () => {
+        const userId = (session?.user as any)?.id;
+        if (!userId) return;
+
+        const updatedNotifs = notifications.map((n) => ({ ...n, read: true }));
+        setMetadata({ ...metadata, notifications: updatedNotifs });
+
+        try {
+            await markNotificationsAsReadAction(userId);
+            toast.success("All announcements marked as read");
+        } catch (err) {
+            console.error("Mark as read error:", err);
+        }
+    };
+
+    const handleDeleteNotification = async (notificationId: string) => {
+        const userId = (session?.user as any)?.id;
+        if (!userId) return;
+
+        const updatedNotifs = notifications.filter((n) => n.id !== notificationId);
+        setMetadata({ ...metadata, notifications: updatedNotifs });
+
+        try {
+            await deleteNotificationAction(userId, notificationId);
+            toast.success("Notification removed");
+        } catch (err) {
+            console.error("Delete notification error:", err);
+        }
+    };
 
     // Local state for forms
     const [depositAmount, setDepositAmount] = useState("");
@@ -34,13 +70,39 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
     const [initialsInput, setInitialsInput] = useState("");
     const [selectedCountryCode, setSelectedCountryCode] = useState("");
 
+    // Personal Verification States
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+    const [dob, setDob] = useState("");
+    const [residence, setResidence] = useState("");
+    const [city, setCity] = useState("");
+    const [stateProv, setStateProv] = useState("");
+    const [phoneNumber, setPhoneNumber] = useState("");
+    const [idCardFile, setIdCardFile] = useState<File | null>(null);
+    const [profilePicFile, setProfilePicFile] = useState<File | null>(null);
+    const [submittingKyc, setSubmittingKyc] = useState(false);
+
     const selectedCountry = countries.find(c => c.code === selectedCountryCode);
 
-    const handleDeposit = (e: React.FormEvent) => {
+    const handleDeposit = async (e: React.FormEvent) => {
         e.preventDefault();
         const val = parseFloat(depositAmount);
         if (!isNaN(val) && val > 0) {
-            setBalance(balance + val);
+            const newBalance = balance + val;
+            setBalance(newBalance);
+            const formattedTotal = `$${newBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+            try {
+                await fetch("/api/user/metadata", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ balance: newBalance, walletTotal: formattedTotal }),
+                });
+                await refreshMetadata();
+            } catch (err) {
+                console.error("Failed to sync deposit to JSONBin:", err);
+            }
+
             toast.success(`Deposited $${val.toFixed(2)} successfully!`);
             setActiveModal("NONE");
             setDepositAmount("");
@@ -49,7 +111,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
         }
     };
 
-    const handleWithdraw = (e: React.FormEvent) => {
+    const handleWithdraw = async (e: React.FormEvent) => {
         e.preventDefault();
         const val = parseFloat(withdrawAmount);
         if (!isNaN(val) && val > 0) {
@@ -57,7 +119,21 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                 toast.error("Insufficient funds!");
                 return;
             }
-            setBalance(balance - val);
+            const newBalance = balance - val;
+            setBalance(newBalance);
+            const formattedTotal = `$${newBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+            try {
+                await fetch("/api/user/metadata", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ balance: newBalance, walletTotal: formattedTotal }),
+                });
+                await refreshMetadata();
+            } catch (err) {
+                console.error("Failed to sync withdrawal to JSONBin:", err);
+            }
+
             toast.success(`Withdrew $${val.toFixed(2)} successfully!`);
             setActiveModal("NONE");
             setWithdrawAmount("");
@@ -66,27 +142,107 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
         }
     };
 
-    const handleVerifyInfoSubmit = (e: React.FormEvent) => {
+    const handleVerifyInfoSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setTimeout(() => {
+        setSubmittingKyc(true);
+        try {
+            let idDocumentUrl = "";
+
+            if (idCardFile) {
+                try {
+                    const res = await uploadFiles("idDocument", { files: [idCardFile] });
+                    if (res && res[0]?.url) {
+                        idDocumentUrl = res[0].url;
+                    }
+                } catch (uploadErr: any) {
+                    console.error("UploadThing cloud error:", uploadErr);
+                    throw new Error("Cloud upload failed. Please ensure UPLOADTHING_TOKEN is set in .env.local!");
+                }
+            }
+
+            const updatedProfile: any = {
+                fullName: `${firstName} ${lastName}`.trim(),
+                phone: phoneNumber,
+                country: selectedCountry?.name || selectedCountryCode,
+                address: residence,
+                city: city,
+                dob: dob,
+                verificationStep: 2
+            };
+
+            if (idDocumentUrl) {
+                updatedProfile.idDocumentUrl = idDocumentUrl;
+            }
+
+            const res = await fetch("/api/user/profile", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(updatedProfile),
+            });
+
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.message || "Failed to save information");
+            }
+
+            await refreshMetadata();
             setVerificationStep(2);
             setActiveModal("NONE");
-            toast.success("Personal information saved.");
-        }, 500);
+            toast.success("Completed!");
+        } catch (err: any) {
+            console.error("KYC Info submit error:", err);
+            toast.error(err.message || "Failed to save information");
+        } finally {
+            setSubmittingKyc(false);
+        }
     };
 
-    const handleVerifyPicSubmit = (e: React.FormEvent) => {
+    const handleVerifyPicSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!initialsInput.trim()) {
-            toast.error("Please enter initials or upload a picture");
-            return;
-        }
-        setTimeout(() => {
-            setProfileInitials(initialsInput.substring(0, 2).toUpperCase());
+        setSubmittingKyc(true);
+        try {
+            let photoUrl = "";
+
+            if (profilePicFile) {
+                try {
+                    const res = await uploadFiles("profilePicture", { files: [profilePicFile] });
+                    if (res && res[0]?.url) {
+                        photoUrl = res[0].url;
+                    }
+                } catch (uploadErr: any) {
+                    console.error("UploadThing cloud error:", uploadErr);
+                    throw new Error("Cloud upload failed. Please ensure UPLOADTHING_TOKEN is set in .env.local!");
+                }
+            }
+
+            if (initialsInput.trim()) {
+                setProfileInitials(initialsInput.substring(0, 2).toUpperCase());
+            }
+
+            const payload: any = { verificationStep: 3 };
+            if (photoUrl) payload.photoUrl = photoUrl;
+
+            const res = await fetch("/api/user/profile", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.message || "Failed to update profile picture");
+            }
+
+            await refreshMetadata();
             setVerificationStep(3);
             setActiveModal("NONE");
-            toast.success("Profile updated successfully!");
-        }, 500);
+            toast.success("Completed!");
+        } catch (err: any) {
+            console.error("KYC Pic submit error:", err);
+            toast.error(err.message || "Failed to update profile picture");
+        } finally {
+            setSubmittingKyc(false);
+        }
     };
 
     // Calculate percentage based on current step
@@ -130,7 +286,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                         </div>
                         <div className="h-1 bg-white/10 rounded-full overflow-hidden w-full">
                             <div
-                                className="h-full bg-[#22c55e] rounded-full transition-all duration-1000 ease-in-out"
+                                className="h-full bg-[#FF4520] rounded-full transition-all duration-1000 ease-in-out"
                                 style={{ width: `${percentage}%` }}
                             ></div>
                         </div>
@@ -146,11 +302,11 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                         <Icon icon="lucide:home" className="text-xl" />
                         <span className="font-medium text-[15px]">Home</span>
                     </Link>
-                    <Link href="/dashboard/watchlist" className={`flex items-center gap-3 px-4 py-[10px] rounded-lg transition-colors border-l-4 ${isActive('/dashboard/watchlist') ? 'bg-white/5 border-[#1e88e5] text-white' : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-white/5'}`}>
+                    <Link href="/dashboard/watchlist" className={`flex items-center gap-3 px-4 py-[10px] rounded-lg transition-colors border-l-4 ${isActive('/dashboard/watchlist') ? 'bg-white/5 border-[#FF4520] text-white' : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-white/5'}`}>
                         <Icon icon="lucide:star" className="text-xl" />
                         <span className="font-medium text-[15px]">Watchlist</span>
                     </Link>
-                    <Link href="/dashboard/portfolio" className={`flex items-center gap-3 px-4 py-[10px] rounded-lg transition-colors border-l-4 ${isActive('/dashboard/portfolio') ? 'bg-white/5 border-[#1e88e5] text-white' : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-white/5'}`}>
+                    <Link href="/dashboard/portfolio" className={`flex items-center gap-3 px-4 py-[10px] rounded-lg transition-colors border-l-4 ${isActive('/dashboard/portfolio') ? 'bg-white/5 border-[#FF4520] text-white' : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-white/5'}`}>
                         <Icon icon="lucide:pie-chart" className="text-xl" />
                         <span className="font-medium text-[15px]">Portfolio</span>
                     </Link>
@@ -158,7 +314,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                         <Icon icon="lucide:globe" className="text-xl" />
                         <span className="font-medium text-[15px]">News</span>
                     </Link>
-                    <Link href="/dashboard/wallet" className={`flex items-center gap-3 px-4 py-[10px] rounded-lg transition-colors border-l-4 ${isActive('/dashboard/wallet') ? 'bg-white/5 border-[#1e88e5] text-white' : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-white/5'}`}>
+                    <Link href="/dashboard/wallet" className={`flex items-center gap-3 px-4 py-[10px] rounded-lg transition-colors border-l-4 ${isActive('/dashboard/wallet') ? 'bg-white/5 border-[#FF4520] text-white' : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-white/5'}`}>
                         <Icon icon="lucide:wallet" className="text-xl shrink-0" />
                         <span className="font-medium text-[15px]">Wallet</span>
                     </Link>
@@ -172,9 +328,16 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                             <Icon icon="lucide:globe" className="text-lg opacity-80" />
                             <span>Discover</span>
                         </Link>
-                        <button onClick={() => setActiveModal("NOTIFICATIONS")} className="flex items-center gap-3 px-4 py-[10px] text-gray-400 hover:text-gray-200 hover:bg-white/5 rounded-lg transition-colors text-sm w-full text-left">
-                            <Icon icon="lucide:bell" className="text-lg opacity-80" />
-                            <span>Notifications</span>
+                        <button onClick={() => setActiveModal("NOTIFICATIONS")} className="flex items-center justify-between px-4 py-[10px] text-gray-400 hover:text-gray-200 hover:bg-white/5 rounded-lg transition-colors text-sm w-full text-left">
+                            <div className="flex items-center gap-3">
+                                <Icon icon="lucide:bell" className="text-lg opacity-80" />
+                                <span>Notifications</span>
+                            </div>
+                            {unreadCount > 0 && (
+                                <span className="bg-red-500 text-white font-mono text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse">
+                                    {unreadCount}
+                                </span>
+                            )}
                         </button>
                         <Link href="/dashboard/account" className={`flex items-center gap-3 px-4 py-[10px] rounded-lg transition-colors text-sm ${isActive('/dashboard/account') ? 'bg-white/5 text-white' : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'}`}>
                             <Icon icon="lucide:user-circle" className="text-lg opacity-80" />
@@ -184,23 +347,28 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                             <Icon icon="lucide:settings" className="text-lg opacity-80" />
                             <span>Edit Profile</span>
                         </Link>
-                        <Link href="#" className="flex items-center gap-3 px-4 py-[10px] text-gray-400 hover:text-gray-200 hover:bg-white/5 rounded-lg transition-colors text-sm opacity-50 cursor-not-allowed">
-                            <Icon icon="lucide:gem" className="text-lg opacity-80" />
-                            <span>CR Crypto Club</span>
-                        </Link>
+                        <button
+                            onClick={() => {
+                                signOut({ callbackUrl: "/signin" });
+                            }}
+                            className="flex items-center gap-3 px-4 py-[10px] text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors text-sm w-full text-left"
+                        >
+                            <Icon icon="lucide:log-out" className="text-lg opacity-80" />
+                            <span>Sign Out</span>
+                        </button>
                     </nav>
                 </div>
 
                 <div className="mt-auto px-6 pb-6 pt-4 flex flex-col gap-4">
                     <button
                         onClick={() => setActiveModal("DEPOSIT")}
-                        className="w-full bg-[#1e88e5] hover:bg-[#1a73e8] text-white font-bold py-3 px-4 rounded-lg transition-colors text-sm tracking-wide"
+                        className="w-full bg-[#FF4520] hover:bg-[#e03a17] text-white font-bold py-3 px-4 rounded-lg transition-colors text-sm tracking-wide"
                     >
                         Deposit Funds
                     </button>
                     <button
                         onClick={() => setActiveModal("WITHDRAW")}
-                        className="w-full bg-transparent border-2 border-[#1e88e5] text-white hover:bg-[#1e88e5]/10 font-bold py-2.5 px-4 rounded-lg transition-colors text-sm tracking-wide"
+                        className="w-full bg-transparent border-2 border-[#FF4520] text-white hover:bg-[#FF4520]/10 font-bold py-2.5 px-4 rounded-lg transition-colors text-sm tracking-wide"
                     >
                         Withdraw Funds
                     </button>
@@ -219,20 +387,29 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                             </div>
                             <input
                                 type="text"
-                                className="bg-[#111315] border border-transparent text-gray-200 text-sm rounded-lg focus:ring-[#1e88e5] focus:border-[#1e88e5] block w-full pl-10 p-2.5 transition-all outline-none"
+                                className="bg-[#111315] border border-transparent text-gray-200 text-sm rounded-lg focus:ring-[#FF4520] focus:border-[#FF4520] block w-full pl-10 p-2.5 transition-all outline-none"
                                 placeholder="Search"
                             />
                         </div>
                     </div>
                     {/* Header Actions */}
                     <div className="flex items-center gap-4 mr-4">
-                        <button onClick={() => setActiveModal("NOTIFICATIONS")} className="text-gray-400 hover:text-white transition-colors relative">
+                        <button onClick={() => setActiveModal("NOTIFICATIONS")} className="text-gray-400 hover:text-white transition-colors relative p-2 rounded-xl hover:bg-white/5">
                             <Icon icon="lucide:bell" className="text-xl" />
-                            <span className="absolute top-0 right-0 w-2 h-2 rounded-full bg-red-500 border border-[#1b1e22]"></span>
+                            {unreadCount > 0 && (
+                                <span className="absolute top-1 right-1 bg-red-500 text-white font-mono text-[10px] font-bold px-1.5 py-0.2 rounded-full border border-[#1b1e22] animate-pulse">
+                                    {unreadCount}
+                                </span>
+                            )}
                         </button>
-                        <Link href="/" className="text-sm bg-black/40 text-gray-300 hover:text-white px-3 py-1.5 rounded-lg transition-colors">
+                        <button
+                            onClick={() => {
+                                signOut({ callbackUrl: "/" });
+                            }}
+                            className="text-sm bg-black/40 text-gray-300 hover:text-white px-3 py-1.5 rounded-lg transition-colors"
+                        >
                             Exit
-                        </Link>
+                        </button>
                     </div>
                 </header>
 
@@ -254,9 +431,14 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                             </div>
                         </div>
                     </div>
-                    <Link href="/" className="text-sm border border-white/10 px-3 py-1.5 rounded-lg hover:bg-white/5 text-gray-300">
+                    <button
+                        onClick={() => {
+                            signOut({ callbackUrl: "/" });
+                        }}
+                        className="text-sm border border-white/10 px-3 py-1.5 rounded-lg hover:bg-white/5 text-gray-300"
+                    >
                         Exit
-                    </Link>
+                    </button>
                 </header>
 
                 <div className="flex-1 w-full bg-[#111315]">
@@ -265,23 +447,23 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
 
                 {/* Mobile Bottom Navigation */}
                 <nav className="lg:hidden fixed bottom-0 left-0 w-full bg-[#1b1e22] border-t border-white/5 flex justify-around p-3 z-50">
-                    <Link href="/dashboard" className={`flex flex-col items-center gap-1 transition-colors ${isActive('/dashboard') ? 'text-[#1e88e5]' : 'text-gray-400 hover:text-white'}`}>
+                    <Link href="/dashboard" className={`flex flex-col items-center gap-1 transition-colors ${isActive('/dashboard') ? 'text-[#FF4520]' : 'text-gray-400 hover:text-white'}`}>
                         <Icon icon="lucide:home" className="text-xl" />
                         <span className="text-[10px] uppercase font-medium">Home</span>
                     </Link>
-                    <Link href="/dashboard/portfolio" className={`flex flex-col items-center gap-1 transition-colors ${isActive('/dashboard/portfolio') ? 'text-[#1e88e5]' : 'text-gray-400 hover:text-white'}`}>
+                    <Link href="/dashboard/portfolio" className={`flex flex-col items-center gap-1 transition-colors ${isActive('/dashboard/portfolio') ? 'text-[#FF4520]' : 'text-gray-400 hover:text-white'}`}>
                         <Icon icon="lucide:pie-chart" className="text-xl" />
                         <span className="text-[10px] uppercase font-medium">Portfolio</span>
                     </Link>
-                    <Link href="/dashboard/copy-trading" className={`flex flex-col items-center gap-1 transition-colors ${isActive('/dashboard/copy-trading') ? 'text-[#1e88e5]' : 'text-gray-400 hover:text-white'}`}>
+                    <Link href="/dashboard/copy-trading" className={`flex flex-col items-center gap-1 transition-colors ${isActive('/dashboard/copy-trading') ? 'text-[#FF4520]' : 'text-gray-400 hover:text-white'}`}>
                         <Icon icon="lucide:globe" className="text-xl" />
                         <span className="text-[10px] uppercase font-medium">Discover</span>
                     </Link>
-                    <Link href="/dashboard/wallet" className={`flex flex-col items-center gap-1 transition-colors ${isActive('/dashboard/wallet') ? 'text-[#1e88e5]' : 'text-gray-400 hover:text-white'}`}>
+                    <Link href="/dashboard/wallet" className={`flex flex-col items-center gap-1 transition-colors ${isActive('/dashboard/wallet') ? 'text-[#FF4520]' : 'text-gray-400 hover:text-white'}`}>
                         <Icon icon="lucide:wallet" className="text-xl" />
                         <span className="text-[10px] uppercase font-medium">Wallet</span>
                     </Link>
-                    <Link href="/dashboard/account" className={`flex flex-col items-center gap-1 transition-colors ${isActive('/dashboard/account') || isActive('/dashboard/profile') ? 'text-[#1e88e5]' : 'text-gray-400 hover:text-white'}`}>
+                    <Link href="/dashboard/account" className={`flex flex-col items-center gap-1 transition-colors ${isActive('/dashboard/account') || isActive('/dashboard/profile') ? 'text-[#FF4520]' : 'text-gray-400 hover:text-white'}`}>
                         <Icon icon="lucide:user-circle" className="text-xl" />
                         <span className="text-[10px] uppercase font-medium">Account</span>
                     </Link>
@@ -303,13 +485,13 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                             {activeModal === "DEPOSIT" && (
                                 <>
                                     <h2 className="text-2xl font-bold mb-6 text-white flex items-center gap-3">
-                                        <Icon icon="lucide:arrow-down-circle" className="text-[#1e88e5]" />
+                                        <Icon icon="lucide:arrow-down-circle" className="text-[#FF4520]" />
                                         Deposit Funds
                                     </h2>
                                     <form onSubmit={handleDeposit} className="space-y-5">
                                         <div>
                                             <label className="block text-sm font-medium text-gray-300 mb-2">Select Payment Method</label>
-                                            <select className="w-full bg-[#111315] border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-[#1e88e5] transition-colors cursor-pointer appearance-none">
+                                            <select className="w-full bg-[#111315] border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-[#FF4520] transition-colors cursor-pointer appearance-none">
                                                 <option>Credit / Debit Card</option>
                                                 <option>PayPal</option>
                                                 <option>Stripe</option>
@@ -328,7 +510,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                                                     required
                                                     value={depositAmount}
                                                     onChange={(e) => setDepositAmount(e.target.value)}
-                                                    className="w-full bg-[#111315] border border-white/10 rounded-xl py-3 pl-8 pr-4 text-lg focus:outline-none focus:border-[#1e88e5] transition-colors"
+                                                    className="w-full bg-[#111315] border border-white/10 rounded-xl py-3 pl-8 pr-4 text-lg focus:outline-none focus:border-[#FF4520] transition-colors"
                                                     placeholder="0.00"
                                                 />
                                             </div>
@@ -341,7 +523,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                                                     Your payment details are fully encrypted and secure. By continuing you agree to the Deposit terms of service.
                                                 </p>
                                             </div>
-                                            <button type="submit" className="w-full py-3.5 rounded-xl font-bold transition-colors bg-[#1e88e5] hover:bg-[#1a73e8] text-white">
+                                            <button type="submit" className="w-full py-3.5 rounded-xl font-bold transition-colors bg-[#FF4520] hover:bg-[#e03a17] text-white">
                                                 Continue to Payment
                                             </button>
                                         </div>
@@ -364,7 +546,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
 
                                         <div>
                                             <label className="block text-sm font-medium text-gray-300 mb-2">Withdrawal Method</label>
-                                            <select className="w-full bg-[#111315] border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-[#1e88e5] transition-colors cursor-pointer appearance-none">
+                                            <select className="w-full bg-[#111315] border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-[#FF4520] transition-colors cursor-pointer appearance-none">
                                                 <option>Crypto Wallet (USDT/BTC/ETH)</option>
                                                 <option>Bank Account</option>
                                             </select>
@@ -374,7 +556,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                                             <input
                                                 type="text"
                                                 required
-                                                className="w-full bg-[#111315] border border-white/10 rounded-xl py-3 px-4 text-md focus:outline-none focus:border-[#1e88e5] transition-colors placeholder:text-gray-600"
+                                                className="w-full bg-[#111315] border border-white/10 rounded-xl py-3 px-4 text-md focus:outline-none focus:border-[#FF4520] transition-colors placeholder:text-gray-600"
                                                 placeholder="Enter address or IBAN..."
                                             />
                                         </div>
@@ -390,7 +572,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                                                     required
                                                     value={withdrawAmount}
                                                     onChange={(e) => setWithdrawAmount(e.target.value)}
-                                                    className="w-full bg-[#111315] border border-white/10 rounded-xl py-3 pl-8 pr-4 text-lg focus:outline-none focus:border-[#1e88e5] transition-colors"
+                                                    className="w-full bg-[#111315] border border-white/10 rounded-xl py-3 pl-8 pr-4 text-lg focus:outline-none focus:border-[#FF4520] transition-colors"
                                                     placeholder="0.00"
                                                 />
                                             </div>
@@ -413,32 +595,73 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <label className="block text-xs font-medium text-gray-400 mb-1">First Name *</label>
-                                                <input type="text" required className="w-full bg-[#111315] border border-white/5 rounded-lg py-2.5 px-3 text-sm focus:border-[#22c55e] outline-none" />
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    value={firstName}
+                                                    onChange={(e) => setFirstName(e.target.value)}
+                                                    className="w-full bg-[#111315] border border-white/5 rounded-lg py-2.5 px-3 text-sm focus:border-[#FF4520] outline-none"
+                                                    placeholder="First name"
+                                                />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-medium text-gray-400 mb-1">Middle Name</label>
-                                                <input type="text" className="w-full bg-[#111315] border border-white/5 rounded-lg py-2.5 px-3 text-sm focus:border-[#22c55e] outline-none" />
+                                                <label className="block text-xs font-medium text-gray-400 mb-1">Last Name *</label>
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    value={lastName}
+                                                    onChange={(e) => setLastName(e.target.value)}
+                                                    className="w-full bg-[#111315] border border-white/5 rounded-lg py-2.5 px-3 text-sm focus:border-[#FF4520] outline-none"
+                                                    placeholder="Last name"
+                                                />
                                             </div>
                                         </div>
 
                                         <div>
                                             <label className="block text-xs font-medium text-gray-400 mb-1">Date of Birth *</label>
-                                            <input type="date" required className="w-full bg-[#111315] border border-white/5 rounded-lg py-2.5 px-3 text-sm focus:border-[#22c55e] outline-none text-gray-300" />
+                                            <input
+                                                type="date"
+                                                required
+                                                value={dob}
+                                                onChange={(e) => setDob(e.target.value)}
+                                                className="w-full bg-[#111315] border border-white/5 rounded-lg py-2.5 px-3 text-sm focus:border-[#FF4520] outline-none text-gray-300"
+                                            />
                                         </div>
 
                                         <div>
                                             <label className="block text-xs font-medium text-gray-400 mb-1">Residential Address *</label>
-                                            <input type="text" required className="w-full bg-[#111315] border border-white/5 rounded-lg py-2.5 px-3 text-sm focus:border-[#22c55e] outline-none" />
+                                            <input
+                                                type="text"
+                                                required
+                                                value={residence}
+                                                onChange={(e) => setResidence(e.target.value)}
+                                                className="w-full bg-[#111315] border border-white/5 rounded-lg py-2.5 px-3 text-sm focus:border-[#FF4520] outline-none"
+                                                placeholder="Street address"
+                                            />
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <label className="block text-xs font-medium text-gray-400 mb-1">City *</label>
-                                                <input type="text" required className="w-full bg-[#111315] border border-white/5 rounded-lg py-2.5 px-3 text-sm focus:border-[#22c55e] outline-none" />
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    value={city}
+                                                    onChange={(e) => setCity(e.target.value)}
+                                                    className="w-full bg-[#111315] border border-white/5 rounded-lg py-2.5 px-3 text-sm focus:border-[#FF4520] outline-none"
+                                                    placeholder="City"
+                                                />
                                             </div>
                                             <div>
                                                 <label className="block text-xs font-medium text-gray-400 mb-1">State / Province *</label>
-                                                <input type="text" required className="w-full bg-[#111315] border border-white/5 rounded-lg py-2.5 px-3 text-sm focus:border-[#22c55e] outline-none" />
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    value={stateProv}
+                                                    onChange={(e) => setStateProv(e.target.value)}
+                                                    className="w-full bg-[#111315] border border-white/5 rounded-lg py-2.5 px-3 text-sm focus:border-[#FF4520] outline-none"
+                                                    placeholder="State"
+                                                />
                                             </div>
                                         </div>
 
@@ -449,7 +672,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                                                     required
                                                     value={selectedCountryCode}
                                                     onChange={(e) => setSelectedCountryCode(e.target.value)}
-                                                    className="w-full bg-[#111315] border border-white/5 rounded-lg py-2.5 px-3 text-sm focus:border-[#22c55e] outline-none text-gray-300"
+                                                    className="w-full bg-[#111315] border border-white/5 rounded-lg py-2.5 px-3 text-sm focus:border-[#FF4520] outline-none text-gray-300"
                                                 >
                                                     <option value="">Select a country...</option>
                                                     {countries.map(c => (
@@ -473,15 +696,27 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                                                     <input
                                                         type="tel"
                                                         required
-                                                        className="w-full bg-[#111315] border border-white/5 rounded-lg py-2.5 pl-[72px] pr-3 text-sm focus:border-[#22c55e] outline-none"
+                                                        value={phoneNumber}
+                                                        onChange={(e) => setPhoneNumber(e.target.value)}
+                                                        className="w-full bg-[#111315] border border-white/5 rounded-lg py-2.5 pl-[72px] pr-3 text-sm focus:border-[#FF4520] outline-none"
                                                         placeholder="Phone number"
                                                     />
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <button type="submit" className="w-full py-3 mt-4 rounded-xl font-bold bg-[#22c55e] hover:bg-[#1fae53] text-black transition-colors">
-                                            Submit Information
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-400 mb-1">Upload ID Card / Passport (Optional)</label>
+                                            <input
+                                                type="file"
+                                                accept="image/*,.pdf"
+                                                onChange={(e) => setIdCardFile(e.target.files?.[0] || null)}
+                                                className="w-full bg-[#111315] border border-white/5 rounded-lg py-2 px-3 text-xs text-gray-400 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:bg-white/10 file:text-white hover:file:bg-white/20"
+                                            />
+                                        </div>
+
+                                        <button type="submit" disabled={submittingKyc} className="w-full py-3 mt-4 rounded-xl font-bold bg-[#FF4520] hover:bg-[#1fae53] text-black transition-colors disabled:opacity-50">
+                                            {submittingKyc ? "Please wait..." : "Submit Information"}
                                         </button>
                                     </form>
                                 </>
@@ -494,13 +729,23 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                                     <p className="text-gray-400 text-sm mb-6">Choose how you want to be displayed on the platform.</p>
 
                                     <form onSubmit={handleVerifyPicSubmit} className="space-y-6">
-                                        <div className="bg-[#111315] border border-white/5 rounded-xl p-6 flex flex-col items-center justify-center border-dashed cursor-pointer hover:bg-white/5 transition-colors group">
+                                        <label className="bg-[#111315] border border-white/5 rounded-xl p-6 flex flex-col items-center justify-center border-dashed cursor-pointer hover:bg-white/5 transition-colors group block">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={(e) => {
+                                                    if (e.target.files?.[0]) setProfilePicFile(e.target.files[0]);
+                                                }}
+                                            />
                                             <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                                                 <Icon icon="lucide:upload-cloud" className="text-2xl text-gray-300" />
                                             </div>
-                                            <p className="text-sm font-medium text-gray-300">Click to upload picture</p>
+                                            <p className="text-sm font-medium text-gray-300">
+                                                {profilePicFile ? profilePicFile.name : "Click to upload picture"}
+                                            </p>
                                             <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 5MB</p>
-                                        </div>
+                                        </label>
 
                                         <div className="flex items-center gap-4 w-full">
                                             <div className="h-px bg-white/10 flex-1"></div>
@@ -515,35 +760,114 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                                                 maxLength={2}
                                                 value={initialsInput}
                                                 onChange={(e) => setInitialsInput(e.target.value.toUpperCase())}
-                                                className="w-full bg-[#111315] border border-white/10 rounded-xl py-3 px-4 text-center text-lg tracking-[0.5em] font-bold focus:outline-none focus:border-[#22c55e] uppercase relative z-10"
+                                                className="w-full bg-[#111315] border border-white/10 rounded-xl py-3 px-4 text-center text-lg tracking-[0.5em] font-bold focus:outline-none focus:border-[#FF4520] uppercase relative z-10"
                                                 placeholder="TH"
                                             />
                                             <p className="text-xs text-gray-500 mt-2 text-center">Enter your initials (e.g. TH) to use as your avatar.</p>
                                         </div>
 
-                                        <button type="submit" className="w-full py-3.5 rounded-xl font-bold bg-[#22c55e] hover:bg-[#1fae53] text-black transition-colors">
-                                            Finish Verification
+                                        <button type="submit" disabled={submittingKyc} className="w-full py-3.5 rounded-xl font-bold bg-[#FF4520] hover:bg-[#1fae53] text-black transition-colors disabled:opacity-50">
+                                            {submittingKyc ? "Please wait..." : "Finish Verification"}
                                         </button>
                                     </form>
                                 </>
                             )}
 
-                            {/* Modal: NOTIFICATIONS (Empty State) */}
+                            {/* Modal: NOTIFICATIONS (Live Announcements Drawer) */}
                             {activeModal === "NOTIFICATIONS" && (
-                                <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-                                    <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-6">
-                                        <Icon icon="lucide:bell-ringing" className="text-4xl text-gray-500" />
+                                <div className="flex flex-col h-full overflow-hidden">
+                                    <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/10 pr-6">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-[#FF4520]">
+                                                <Icon icon="lucide:bell-ringing" className="text-xl" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-bold text-white tracking-tight">Announcements & Alerts</h3>
+                                                <p className="text-xs text-gray-400 font-mono">Platform notifications and system messages</p>
+                                            </div>
+                                        </div>
+
+                                        {unreadCount > 0 && (
+                                            <button
+                                                onClick={handleMarkAllAsRead}
+                                                className="text-xs text-[#FF4520] hover:text-blue-400 font-mono font-bold transition-colors shrink-0"
+                                            >
+                                                Mark all read
+                                            </button>
+                                        )}
                                     </div>
-                                    <h2 className="text-2xl font-bold mb-2 text-white">No notifications yet</h2>
-                                    <p className="text-gray-400 text-sm max-w-xs">
-                                        When you get notifications about your account, transactions, or market alerts, they'll show up here.
-                                    </p>
-                                    <button
-                                        onClick={() => setActiveModal("NONE")}
-                                        className="mt-8 px-6 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-colors font-medium text-sm"
-                                    >
-                                        Close
-                                    </button>
+
+                                    {notifications.length > 0 ? (
+                                        <div className="flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-1 flex-1 py-1">
+                                            {notifications.map((item) => {
+                                                const iconMap = {
+                                                    info: { icon: "lucide:info", color: "text-blue-400 bg-blue-500/10 border-blue-500/20" },
+                                                    success: { icon: "lucide:check-circle", color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" },
+                                                    warning: { icon: "lucide:alert-triangle", color: "text-amber-400 bg-amber-500/10 border-amber-500/20" },
+                                                    alert: { icon: "lucide:bell-ring", color: "text-red-400 bg-red-500/10 border-red-500/20" },
+                                                };
+                                                const typeStyle = iconMap[item.type || "info"];
+
+                                                return (
+                                                    <div
+                                                        key={item.id}
+                                                        className={`p-4 rounded-xl border transition-all relative ${
+                                                            !item.read
+                                                                ? "bg-[#14161b] border-blue-500/40 shadow-lg"
+                                                                : "bg-[#111315] border-white/5 opacity-85"
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-start justify-between gap-3">
+                                                            <div className="flex items-start gap-3">
+                                                                <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 mt-0.5 ${typeStyle.color}`}>
+                                                                    <Icon icon={typeStyle.icon} className="text-base" />
+                                                                </div>
+                                                                <div>
+                                                                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                                                        <span className="font-bold text-white text-sm">{item.title}</span>
+                                                                        {item.isGlobal ? (
+                                                                            <span className="text-[9px] font-mono font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30 px-1.5 py-0.2 rounded uppercase">
+                                                                                GLOBAL BROADCAST
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span className="text-[9px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 px-1.5 py-0.2 rounded uppercase">
+                                                                                DIRECT MESSAGE
+                                                                            </span>
+                                                                        )}
+                                                                        {!item.read && (
+                                                                            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                                                                        )}
+                                                                    </div>
+                                                                    <p className="text-xs text-gray-300 leading-relaxed font-sans">{item.message}</p>
+                                                                    <span className="text-[10px] text-gray-500 font-mono mt-2 block">
+                                                                        {new Date(item.createdAt).toLocaleString()}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+
+                                                            <button
+                                                                onClick={() => handleDeleteNotification(item.id)}
+                                                                className="text-gray-500 hover:text-red-400 p-1 transition-colors"
+                                                                title="Delete notification"
+                                                            >
+                                                                <Icon icon="lucide:trash-2" className="text-sm" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center py-12 px-4 text-center my-auto">
+                                            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4 border border-white/5">
+                                                <Icon icon="lucide:bell-off" className="text-3xl text-gray-500" />
+                                            </div>
+                                            <h4 className="text-lg font-bold mb-1 text-white">No announcements yet</h4>
+                                            <p className="text-gray-400 text-xs max-w-xs">
+                                                System announcements, deposit confirmations, and admin notices will appear right here.
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 

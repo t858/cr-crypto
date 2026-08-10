@@ -25,13 +25,16 @@ const Signin = () => {
       });
 
       if (res?.error) {
-        toast.error("Invalid email or password.");
+        const errorMsg = res.error === "CredentialsSignin" 
+          ? "Wrong password or account email not found."
+          : res.error;
+        toast.error(errorMsg);
       } else if (res?.ok) {
         toast.success("Signed in successfully!");
         router.push("/dashboard");
       }
-    } catch (error) {
-      toast.error("An error occurred during sign in");
+    } catch (error: any) {
+      toast.error(error?.message || "An error occurred during sign in");
     } finally {
       setLoading(false);
     }

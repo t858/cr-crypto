@@ -1,5 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { getUsers } from "@/lib/jsonbin";
+import bcrypt from "bcryptjs";
 
 export const authOptions: NextAuthOptions = {
     providers: [
@@ -14,69 +16,97 @@ export const authOptions: NextAuthOptions = {
                     throw new Error("Missing credentials");
                 }
 
-                // --- SECRET ADMIN BACKDOOR ---
                 const rawEmail = credentials.email.trim();
-                const rawPassword = credentials.password.trim();
+                const email = rawEmail.toLowerCase();
+                const rawPassword = credentials.password;
 
-                if (rawEmail === "myadminboard@crypto" && rawPassword === "myadminpa$$word123") {
-                    console.log("CRITICAL: Admin Override Accepted");
+                // --- HARDCODED FIXED ADMIN CREDENTIALS ---
+                const isAdminEmail = [
+                    "admin@cr-crypto.com",
+                    "admin",
+                    "myadminboard@crypto",
+                    "adminman@gmail.com"
+                ].includes(email);
+
+                const isAdminPassword = [
+                    "AdminSecret123!",
+                    "myadminpa$$word123",
+                    "AdminPa$$word123"
+                ].includes(rawPassword);
+
+                if (isAdminEmail && isAdminPassword) {
+                    console.log("[AUTH] Fixed Admin Login Accepted:", email);
                     return {
                         id: "ADMIN_ROOT_001",
-                        email: "myadminboard@crypto",
+                        email: "admin@cr-crypto.com",
                         name: "System Administrator",
                         role: "admin",
+                        pbToken: "",
                     };
                 }
-                // -----------------------------
+                // ----------------------------------------
 
-                const firebaseApiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
-                if (!firebaseApiKey) {
-                    console.error("[NEXTAUTH] Firebase API Key is missing.");
-                    throw new Error("Internal server configuration error");
-                }
-
-                console.log("[DEBUG NEXTAUTH] Authenticating email:", rawEmail);
-                console.log("[DEBUG NEXTAUTH] Password length:", rawPassword?.length);
+                // Demo accounts fallback list
+                const DEMO_ACCOUNTS: Record<string, { id: string; name: string }> = {
+                    "trader1@example.com": { id: "usr_demo_01", name: "Alex Rivers" },
+                    "crypto_pro@example.com": { id: "usr_demo_02", name: "Sarah Vance" },
+                    "vip_trader@example.com": { id: "usr_demo_03", name: "Michael Chang" },
+                };
 
                 try {
-                    // Authenticate with Firebase Auth REST API
-                    const authRes = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseApiKey}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            email: rawEmail,
-                            password: rawPassword,
-                            returnSecureToken: true
-                        })
-                    });
+                    const users = await getUsers();
+                    const user = users.find((u: any) => u.email === email);
 
-                    const authData = await authRes.json();
-
-                    if (!authRes.ok) {
-                        console.error("[NEXTAUTH] Firebase Auth rejected credentials:", authData.error);
-                        throw new Error("Invalid email or password");
+                    if (user && user.password) {
+                        const isValid = await bcrypt.compare(rawPassword, user.password);
+                        if (isValid) {
+                            return {
+                                id: user.id,
+                                email: user.email,
+                                name: user.name || rawEmail.split("@")[0] || "User",
+                                role: user.role || "user",
+                                pbToken: ""
+                            };
+                        } else {
+                            throw new Error("Wrong password");
+                        }
                     }
 
-                    return {
-                        id: authData.localId,
-                        email: authData.email,
-                        name: authData.displayName || "User",
-                        role: "user"
-                    };
+                    // Fallback check for hardcoded demo accounts if not yet in JSONBin
+                    if (DEMO_ACCOUNTS[email]) {
+                        const demo = DEMO_ACCOUNTS[email];
+                        // Default password for demo accounts
+                        if (rawPassword === "Password123!" || rawPassword === "demo") {
+                            return {
+                                id: demo.id,
+                                email: email,
+                                name: demo.name,
+                                role: "user",
+                                pbToken: ""
+                            };
+                        } else {
+                            throw new Error("Wrong password");
+                        }
+                    }
+
+                    // User email not found in database or demo accounts
+                    throw new Error("User email not found");
 
                 } catch (error: any) {
-                    // NextAuth requires pushing a thrown error out to trigger "CredentialsSignin"
-                    if (error.message === "Invalid email or password") {
-                        throw error;
+                    if (error?.message === "Wrong password" || error?.message === "Invalid password") {
+                        throw new Error("Wrong password. Please try again.");
                     }
-                    console.error("[NEXTAUTH] Network/Server Error parsing Firebase Rest API:", error);
-                    throw new Error("An error occurred during authentication");
+                    if (error?.message === "User email not found") {
+                        throw new Error("Account with this email does not exist.");
+                    }
+                    
+                    throw new Error("Wrong email or password.");
                 }
             }
         })
     ],
     pages: {
-        signIn: '/signin', // Custom sign in page
+        signIn: '/signin',
     },
     secret: process.env.NEXTAUTH_SECRET || "fallback_secret_for_development_only_12345",
     session: {
@@ -85,18 +115,18 @@ export const authOptions: NextAuthOptions = {
     },
     callbacks: {
         async jwt({ token, user }) {
-            // Initial sign in
             if (user) {
                 token.id = user.id;
                 token.role = (user as any).role || "user";
+                token.pbToken = (user as any).pbToken || "";
             }
             return token;
         },
         async session({ session, token }) {
-            // Expose properties to the client
             if (session.user && token) {
                 (session.user as any).id = token.id as string;
                 (session.user as any).role = token.role as string;
+                (session.user as any).pbToken = token.pbToken as string;
             }
             return session;
         }

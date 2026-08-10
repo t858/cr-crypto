@@ -1,10 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://dummy-url-for-build.supabase.co";
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "dummy-key-for-build";
+const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const rawKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
-console.log("Supabase URL initialized:", supabaseUrl);
-console.log("Supabase Key starts with:", supabaseKey.substring(0, 15) + "...");
+export const isSupabaseConfigured = Boolean(
+  rawUrl &&
+  rawKey &&
+  !rawUrl.includes("dummy-url") &&
+  rawUrl.startsWith("http")
+);
+
+const supabaseUrl = isSupabaseConfigured ? rawUrl : "https://dummy-url-for-build.supabase.co";
+const supabaseKey = isSupabaseConfigured ? rawKey : "dummy-key-for-build";
 
 export const supabase = createClient(supabaseUrl, supabaseKey, {
     auth: {
