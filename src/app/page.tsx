@@ -158,7 +158,7 @@ export default function Home() {
           {/* Metric Cards */}
           <div className="pt-12 grid grid-cols-2 md:grid-cols-4 gap-6 border-t border-gray-100 mt-12">
             <div className="p-4 rounded-2xl bg-gray-50/80 border border-gray-100">
-              <div className="text-2xl sm:text-3xl font-black text-gray-900">$100B+</div>
+              <div className="text-2xl sm:text-3xl font-black text-gray-900">$100M+</div>
               <div className="text-xs sm:text-sm text-gray-500 font-medium mt-1">Monthly Trading Volume</div>
             </div>
             <div className="p-4 rounded-2xl bg-[#FF4520]/5 border border-[#FF4520]/15">
