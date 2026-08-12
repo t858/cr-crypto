@@ -6,12 +6,13 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import SocialSignIn from "../SocialSignIn";
 import Logo from "../../layout/header/logo";
-import Loader from "../../shared/Loader";
+import { Icon } from "@iconify/react/dist/iconify.js";
 
 const Signin = () => {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,9 +26,10 @@ const Signin = () => {
       });
 
       if (res?.error) {
-        const errorMsg = res.error === "CredentialsSignin" 
-          ? "Wrong password or account email not found."
-          : res.error;
+        let errorMsg = res.error;
+        if (res.error === "CredentialsSignin") {
+          errorMsg = "Wrong email or password";
+        }
         toast.error(errorMsg);
       } else if (res?.ok) {
         toast.success("Signed in successfully!");
@@ -65,15 +67,23 @@ const Signin = () => {
             className="w-full rounded-md border border-white/20 border-solid bg-transparent px-5 py-3 text-base text-dark outline-hidden transition placeholder:text-grey focus:border-primary focus-visible:shadow-none text-white"
           />
         </div>
-        <div className="mb-[22px]">
+        <div className="mb-[22px] relative">
           <input
-            type="password"
+            type={showPassword ? "text" : "password"}
             placeholder="Password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-md border border-white/20 border-solid bg-transparent px-5 py-3 text-base text-dark outline-hidden transition placeholder:text-grey focus:border-primary focus-visible:shadow-none text-white"
+            className="w-full rounded-md border border-white/20 border-solid bg-transparent pl-5 pr-12 py-3 text-base text-dark outline-hidden transition placeholder:text-grey focus:border-primary focus-visible:shadow-none text-white"
           />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+          >
+            <Icon icon={showPassword ? "lucide:eye-off" : "lucide:eye"} className="text-xl" />
+          </button>
         </div>
         <div className="mb-9">
           <button

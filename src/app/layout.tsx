@@ -6,6 +6,7 @@ import ScrollToTop from './components/scroll-to-top'
 import Header from './components/layout/header'
 import Footer from './components/layout/footer'
 import AuthProvider from './components/auth/AuthProvider'
+import ToasterContext from '@/app/api/contex/ToasetContex'
 const font = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
@@ -30,6 +31,7 @@ export default function RootLayout({
     <html lang='en' data-scroll-behavior="smooth" suppressHydrationWarning>
       <body className={`${font.className}`}>
         <AuthProvider>
+          <ToasterContext />
           <Aoscompo>
             <Header />
             {children}

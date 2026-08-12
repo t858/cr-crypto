@@ -6,17 +6,42 @@ import { useState } from 'react'
 import toast from 'react-hot-toast'
 import SocialSignUp from '../SocialSignUp'
 import Logo from '../../layout/header/logo'
-import Loader from '../../shared/Loader'
+import { Icon } from '@iconify/react/dist/iconify.js'
 
 const SignUp = () => {
   const router = useRouter()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+
+  const validatePassword = (pwd: string) => {
+    if (!pwd || pwd.length < 8) {
+      return "Password must be at least 8 characters long.";
+    }
+    if (!/[A-Z]/.test(pwd)) {
+      return "Password must contain at least 1 uppercase capital letter.";
+    }
+    if (!/[0-9]/.test(pwd)) {
+      return "Password must contain at least 1 number.";
+    }
+    if (!/[^A-Za-z0-9]/.test(pwd)) {
+      return "Password must contain at least 1 special character (e.g. @, $, _, !, etc.).";
+    }
+    return null;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Enforce Password Validation Rules before account creation
+    const pwdError = validatePassword(password);
+    if (pwdError) {
+      toast.error(pwdError, { duration: 5000 });
+      return;
+    }
+
     setLoading(true)
     try {
       // 1. Create the user
@@ -31,10 +56,16 @@ const SignUp = () => {
       const signupData = await signupRes.json();
 
       if (!signupRes.ok) {
-        toast.error(signupData.message || 'Sign up failed.');
+        if (signupRes.status === 409 || signupData.message?.toLowerCase().includes("email")) {
+          toast.error("Email already in use");
+        } else {
+          toast.error(signupData.message || 'Sign up failed.');
+        }
         setLoading(false);
         return;
       }
+
+      toast.success("User account has been successfully created!");
 
       // 2. Sign them in immediately using NextAuth credentials provider
       const res = await signIn('credentials', {
@@ -44,9 +75,9 @@ const SignUp = () => {
       })
 
       if (res?.error) {
-        toast.error('Sign in after registration failed.')
+        toast.error('Account created! Please sign in.')
+        router.push('/signin')
       } else {
-        toast.success('Account created successfully!')
         router.push('/dashboard')
       }
     } catch (error) {
@@ -93,18 +124,26 @@ const SignUp = () => {
             className='w-full rounded-md border border-white/20 border-solid bg-transparent px-5 py-3 text-base text-dark outline-hidden transition placeholder:text-grey focus:border-primary focus-visible:shadow-none text-white'
           />
         </div>
-        <div className='mb-[22px]'>
+        <div className='mb-[22px] relative'>
           <input
-            type='password'
+            type={showPassword ? "text" : "password"}
             placeholder='Password'
             name='password'
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className='w-full rounded-md border border-white/20 border-solid bg-transparent px-5 py-3 text-base text-dark outline-hidden transition placeholder:text-grey focus:border-primary focus-visible:shadow-none text-white'
+            className='w-full rounded-md border border-white/20 border-solid bg-transparent pl-5 pr-12 py-3 text-base text-dark outline-hidden transition placeholder:text-grey focus:border-primary focus-visible:shadow-none text-white'
           />
-          <p className="text-[11px] text-gray-400 mt-1 pl-1">
-            Must be 8+ characters with at least 1 capital letter, 1 number, and 1 special char (e.g. @, $, _, !).
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+          >
+            <Icon icon={showPassword ? "lucide:eye-off" : "lucide:eye"} className="text-xl" />
+          </button>
+          <p className="text-[11px] text-gray-400 mt-2 pl-1">
+            Must be at least 8 characters with at least 1 capital letter, 1 number, and 1 special char (e.g. @, $, _, !).
           </p>
         </div>
         <div className='mb-9'>

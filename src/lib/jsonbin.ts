@@ -10,7 +10,7 @@ export function getJsonBinConfig() {
         apiKey = "$2a$10$suA2R1NTVop/Ymsi6ZC.ieK1mJdWRV8G.J1CpUrg4ndgJpeMSC/dC";
     }
     if (!binId) {
-        binId = "6a6c474fda38895dfea77299";
+        binId = "6a7cd53ada38895dfedc596e";
     }
 
     return {

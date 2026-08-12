@@ -10,6 +10,7 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 const SigninPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -25,14 +26,18 @@ const SigninPage = () => {
       });
 
       if (result?.error) {
-        toast.error("Invalid email or password");
+        let errMessage = result.error;
+        if (result.error === "CredentialsSignin") {
+          errMessage = "Wrong email or password";
+        }
+        toast.error(errMessage);
       } else {
         toast.success("Logged in successfully!");
         router.push("/dashboard");
         router.refresh();
       }
-    } catch (error) {
-      toast.error("An error occurred during login");
+    } catch (error: any) {
+      toast.error(error?.message || "An error occurred during login");
     } finally {
       setLoading(false);
     }
@@ -84,14 +89,24 @@ const SigninPage = () => {
               <label className="block text-xs font-bold text-gray-300">Password</label>
               <Link href="#" className="text-xs font-bold text-[#FF4520] hover:underline">Forgot password?</Link>
             </div>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-[#161B22] border border-gray-800 rounded-xl py-3.5 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-[#FF4520] transition-colors text-sm"
-              placeholder="••••••••"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-[#161B22] border border-gray-800 rounded-xl py-3.5 pl-4 pr-11 text-white placeholder-gray-500 focus:outline-none focus:border-[#FF4520] transition-colors text-sm"
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                <Icon icon={showPassword ? "lucide:eye-off" : "lucide:eye"} className="text-lg" />
+              </button>
+            </div>
           </div>
 
           <button

@@ -46,7 +46,7 @@ export async function POST(req: Request) {
             const users = await getUsers();
             
             if (users.some((u: any) => u.email === email)) {
-                return NextResponse.json({ message: "An account with this email already exists" }, { status: 409 });
+                return NextResponse.json({ message: "Email already in use" }, { status: 409 });
             }
 
             const salt = await bcrypt.genSalt(10);

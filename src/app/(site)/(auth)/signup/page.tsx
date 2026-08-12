@@ -10,15 +10,39 @@ const SignupPage = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  const validatePassword = (pwd: string) => {
+    if (!pwd || pwd.length < 8) {
+      return "Password must be at least 8 characters long.";
+    }
+    if (!/[A-Z]/.test(pwd)) {
+      return "Password must contain at least 1 uppercase capital letter.";
+    }
+    if (!/[0-9]/.test(pwd)) {
+      return "Password must contain at least 1 number.";
+    }
+    if (!/[^A-Za-z0-9]/.test(pwd)) {
+      return "Password must contain at least 1 special character (e.g. @, $, _, !, etc.).";
+    }
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Enforce Password Validation Rules before account creation
+    const pwdError = validatePassword(password);
+    if (pwdError) {
+      toast.error(pwdError, { duration: 5000 });
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // 1. Create the user
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -28,15 +52,21 @@ const SignupPage = () => {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.message || "Failed to create account");
+        if (res.status === 409 || data.message?.toLowerCase().includes("email")) {
+          toast.error("Email already in use");
+        } else {
+          toast.error(data.message || "Failed to create account");
+        }
         setLoading(false);
         return;
       }
 
-      toast.success("Account created! Please sign in to continue.");
-      router.push("/signin");
+      toast.success("User account has been successfully created!");
+      setTimeout(() => {
+        router.push("/signin");
+      }, 1200);
     } catch (error) {
-      toast.error("An unexpected error occurred");
+      toast.error("An unexpected error occurred during signup");
     } finally {
       setLoading(false);
     }
@@ -97,16 +127,26 @@ const SignupPage = () => {
 
           <div>
             <label className="block text-xs font-bold text-gray-300 mb-2 px-1">Secure Password</label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-[#161B22] border border-gray-800 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-[#FF4520] transition-colors text-sm"
-              placeholder="••••••••"
-            />
-            <p className="text-[11px] text-gray-500 mt-2 px-1 leading-relaxed">
-              Must be at least 10 characters containing 1 uppercase, 1 lowercase, 1 number, and 1 special symbol.
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-[#161B22] border border-gray-800 rounded-xl py-3 pl-4 pr-11 text-white placeholder-gray-500 focus:outline-none focus:border-[#FF4520] transition-colors text-sm"
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                <Icon icon={showPassword ? "lucide:eye-off" : "lucide:eye"} className="text-lg" />
+              </button>
+            </div>
+            <p className="text-[11px] text-gray-400 mt-2 px-1 leading-relaxed">
+              Must be at least 8 characters containing 1 capital letter, 1 number, and 1 special symbol.
             </p>
           </div>
 

@@ -13,12 +13,16 @@ export const authOptions: NextAuthOptions = {
             },
             async authorize(credentials) {
                 if (!credentials?.email || !credentials?.password) {
-                    throw new Error("Missing credentials");
+                    throw new Error("Wrong email and password");
                 }
 
                 const rawEmail = credentials.email.trim();
                 const email = rawEmail.toLowerCase();
                 const rawPassword = credentials.password;
+
+                if (!email || !rawPassword) {
+                    throw new Error("Wrong email and password");
+                }
 
                 // --- HARDCODED FIXED ADMIN CREDENTIALS ---
                 const isAdminEmail = [
@@ -34,15 +38,19 @@ export const authOptions: NextAuthOptions = {
                     "AdminPa$$word123"
                 ].includes(rawPassword);
 
-                if (isAdminEmail && isAdminPassword) {
-                    console.log("[AUTH] Fixed Admin Login Accepted:", email);
-                    return {
-                        id: "ADMIN_ROOT_001",
-                        email: "admin@cr-crypto.com",
-                        name: "System Administrator",
-                        role: "admin",
-                        pbToken: "",
-                    };
+                if (isAdminEmail) {
+                    if (isAdminPassword) {
+                        console.log("[AUTH] Fixed Admin Login Accepted:", email);
+                        return {
+                            id: "ADMIN_ROOT_001",
+                            email: "admin@cr-crypto.com",
+                            name: "System Administrator",
+                            role: "admin",
+                            pbToken: "",
+                        };
+                    } else {
+                        throw new Error("Wrong password");
+                    }
                 }
                 // ----------------------------------------
 
@@ -53,11 +61,11 @@ export const authOptions: NextAuthOptions = {
                     "vip_trader@example.com": { id: "usr_demo_03", name: "Michael Chang" },
                 };
 
-                try {
-                    const users = await getUsers();
-                    const user = users.find((u: any) => u.email === email);
+                const users = await getUsers();
+                const user = users.find((u: any) => u.email === email);
 
-                    if (user && user.password) {
+                if (user) {
+                    if (user.password) {
                         const isValid = await bcrypt.compare(rawPassword, user.password);
                         if (isValid) {
                             return {
@@ -70,38 +78,29 @@ export const authOptions: NextAuthOptions = {
                         } else {
                             throw new Error("Wrong password");
                         }
+                    } else {
+                        throw new Error("Wrong password");
                     }
-
-                    // Fallback check for hardcoded demo accounts if not yet in JSONBin
-                    if (DEMO_ACCOUNTS[email]) {
-                        const demo = DEMO_ACCOUNTS[email];
-                        // Default password for demo accounts
-                        if (rawPassword === "Password123!" || rawPassword === "demo") {
-                            return {
-                                id: demo.id,
-                                email: email,
-                                name: demo.name,
-                                role: "user",
-                                pbToken: ""
-                            };
-                        } else {
-                            throw new Error("Wrong password");
-                        }
-                    }
-
-                    // User email not found in database or demo accounts
-                    throw new Error("User email not found");
-
-                } catch (error: any) {
-                    if (error?.message === "Wrong password" || error?.message === "Invalid password") {
-                        throw new Error("Wrong password. Please try again.");
-                    }
-                    if (error?.message === "User email not found") {
-                        throw new Error("Account with this email does not exist.");
-                    }
-                    
-                    throw new Error("Wrong email or password.");
                 }
+
+                // Fallback check for hardcoded demo accounts if not yet in JSONBin
+                if (DEMO_ACCOUNTS[email]) {
+                    const demo = DEMO_ACCOUNTS[email];
+                    if (rawPassword === "Password123!" || rawPassword === "demo") {
+                        return {
+                            id: demo.id,
+                            email: email,
+                            name: demo.name,
+                            role: "user",
+                            pbToken: ""
+                        };
+                    } else {
+                        throw new Error("Wrong password");
+                    }
+                }
+
+                // Email not found anywhere in database or demo accounts
+                throw new Error("Wrong email");
             }
         })
     ],
