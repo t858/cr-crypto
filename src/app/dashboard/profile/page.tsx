@@ -9,7 +9,7 @@ import { countries } from "@/utils/countries";
 import { uploadFiles } from "@/lib/uploadthing";
 
 export default function ProfilePage() {
-    const { metadata, refreshMetadata } = useDashboard();
+    const { metadata, refreshMetadata, verificationStep } = useDashboard();
     const { data: session } = useSession();
     
     // Form state populated with existing metadata if available
@@ -21,6 +21,7 @@ export default function ProfilePage() {
         city: metadata?.profile?.city || "",
         dob: metadata?.profile?.dob || "",
         photoUrl: metadata?.profile?.photoUrl || "",
+        idDocumentUrl: metadata?.profile?.idDocumentUrl || "",
     });
 
     const [isSaving, setIsSaving] = useState(false);
@@ -40,9 +41,12 @@ export default function ProfilePage() {
                 city: metadata.profile.city || "",
                 dob: metadata.profile.dob || "",
                 photoUrl: metadata.profile.photoUrl || "",
+                idDocumentUrl: metadata.profile.idDocumentUrl || "",
             });
         }
     }, [metadata]);
+
+    const isFullyVerified = verificationStep === 3 || (formData.fullName && formData.country && formData.photoUrl);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -69,8 +73,17 @@ export default function ProfilePage() {
             const res = await uploadFiles("profilePicture", { files: [file] });
             if (res && res[0]?.url) {
                 setUploadProgress(100);
-                setFormData(prev => ({ ...prev, photoUrl: res[0].url }));
-                toast.success("Profile picture uploaded to cloud!");
+                const uploadedUrl = res[0].url;
+                setFormData(prev => ({ ...prev, photoUrl: uploadedUrl }));
+                
+                // Immediately save photo URL
+                await fetch("/api/user/profile", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ photoUrl: uploadedUrl }),
+                });
+                await refreshMetadata();
+                toast.success("Selfie uploaded & saved successfully! ✓");
             } else {
                 throw new Error("Cloud upload failed");
             }
@@ -111,32 +124,81 @@ export default function ProfilePage() {
     };
 
     return (
-        <div className="p-4 md:p-8 max-w-4xl max-w-content mx-auto animate-in fade-in duration-500">
-            <div className="mb-8">
-                <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">My Profile</h1>
-                <p className="text-gray-400">Manage your personal information and account settings.</p>
+        <div className="p-4 md:p-8 max-w-4xl mx-auto animate-in fade-in duration-500">
+            <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">My Profile</h1>
+                    <p className="text-gray-400">Manage your personal information and verified identity details.</p>
+                </div>
+                {isFullyVerified && (
+                    <div className="flex items-center gap-2 bg-[#22c55e]/15 border border-[#22c55e]/30 px-4 py-2 rounded-xl text-[#22c55e] font-bold text-sm shadow-sm shrink-0">
+                        <Icon icon="lucide:shield-check" className="text-xl" />
+                        <span>100% Identity Verified ✓</span>
+                    </div>
+                )}
             </div>
+
+            {/* Verification Status Banner */}
+            {isFullyVerified ? (
+                <div className="mb-8 bg-gradient-to-r from-[#22c55e]/20 via-[#1b1e22] to-[#1b1e22] border border-[#22c55e]/30 rounded-2xl p-6 text-white shadow-xl flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-[#22c55e]/20 border border-[#22c55e]/40 flex items-center justify-center text-[#22c55e] shrink-0">
+                            <Icon icon="lucide:check-circle-2" className="text-3xl" />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-lg text-white flex items-center gap-2">
+                                Identity Verification 100% Completed
+                                <span className="bg-[#22c55e] text-black text-[10px] uppercase font-black px-2 py-0.5 rounded-md">VERIFIED</span>
+                            </h3>
+                            <p className="text-xs text-gray-300 mt-0.5">
+                                Your KYC information and document selfie have been verified and saved to your account.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div className="mb-8 bg-gradient-to-r from-amber-500/10 via-[#1b1e22] to-[#1b1e22] border border-amber-500/30 rounded-2xl p-6 text-white shadow-xl flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
+                            <Icon icon="lucide:alert-circle" className="text-3xl" />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-lg text-white">Identity Verification Pending</h3>
+                            <p className="text-xs text-gray-400 mt-0.5">
+                                Complete your personal details & selfie upload to reach 100% verification.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <form onSubmit={handleSubmit} className="bg-[#1b1e22] border border-white/5 rounded-2xl overflow-hidden shadow-xl">
                 
                 {/* Header / Avatar Upload Section */}
                 <div className="p-8 border-b border-white/5 flex flex-col md:flex-row gap-8 items-center md:items-start bg-black/20">
                     <div className="relative group">
-                        <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-[#3b82f6]/20 bg-[#111315] flex items-center justify-center shrink-0">
+                        <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-[#3b82f6]/20 bg-[#111315] flex items-center justify-center shrink-0 relative">
                             {formData.photoUrl ? (
                                 <img src={formData.photoUrl} alt="Profile" className="w-full h-full object-cover" />
                             ) : (
                                 <Icon icon="lucide:user" className="text-6xl text-gray-600" />
+                            )}
+
+                            {/* Green Checkmark Badge on Selfie Photo */}
+                            {formData.photoUrl && (
+                                <div className="absolute bottom-1 right-1 w-8 h-8 rounded-full bg-[#22c55e] border-2 border-[#1b1e22] flex items-center justify-center text-black font-black shadow-lg" title="Selfie Verified ✓">
+                                    <Icon icon="lucide:check" className="text-lg font-black" />
+                                </div>
                             )}
                             
                             <button
                                 type="button"
                                 onClick={() => fileInputRef.current?.click()}
                                 disabled={isUploading}
-                                className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-full"
                             >
                                 <Icon icon="lucide:camera" className="text-white text-2xl mb-1" />
-                                <span className="text-white text-xs font-medium">Change</span>
+                                <span className="text-white text-xs font-medium">Change Selfie</span>
                             </button>
                         </div>
                         
@@ -158,20 +220,28 @@ export default function ProfilePage() {
                     </div>
                     
                     <div className="flex-1 text-center md:text-left">
-                        <h2 className="text-xl font-bold text-white mb-1">
-                            {formData.fullName || "Update your name below"}
-                        </h2>
+                        <div className="flex items-center gap-3 justify-center md:justify-start flex-wrap mb-1">
+                            <h2 className="text-xl font-bold text-white">
+                                {formData.fullName || session?.user?.name || "Update your name below"}
+                            </h2>
+                            {formData.photoUrl && (
+                                <span className="bg-[#22c55e]/20 text-[#22c55e] border border-[#22c55e]/40 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1">
+                                    <Icon icon="lucide:check-circle" className="text-sm" />
+                                    Selfie Uploaded ✓
+                                </span>
+                            )}
+                        </div>
                         <p className="text-sm text-gray-400 mb-4">
-                            PNG or JPG. Minimum recommendation 256x256px.
+                            {session?.user?.email}
                         </p>
                         <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
                             disabled={isUploading}
-                            className="text-sm bg-white/5 border border-white/10 hover:bg-white/10 text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-2"
+                            className="text-sm bg-white/5 border border-white/10 hover:bg-white/10 text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-2 font-medium"
                         >
                             <Icon icon="lucide:upload" />
-                            {isUploading ? "Uploading..." : "Upload New Picture"}
+                            {isUploading ? "Uploading Selfie..." : "Upload Selfie Picture"}
                         </button>
                     </div>
                 </div>
@@ -254,6 +324,78 @@ export default function ProfilePage() {
                             placeholder="New York City"
                             className="w-full bg-[#111315] border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-[#3b82f6] transition-colors"
                         />
+                    </div>
+
+                    {/* ID Document Upload & Status Row */}
+                    <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-400 mb-2">Government ID Card / Passport Document</label>
+                        <label className={`block border ${formData.idDocumentUrl ? 'border-[#22c55e]/50 bg-[#22c55e]/5' : 'border-white/10 bg-[#111315]'} rounded-xl p-5 cursor-pointer hover:bg-white/5 transition-all text-center group`}>
+                            <input
+                                type="file"
+                                accept="image/*,.pdf"
+                                className="hidden"
+                                onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+                                    toast.loading("Uploading ID Document to secure cloud...", { id: "docUpload" });
+                                    try {
+                                        const res = await uploadFiles("idDocument", { files: [file] });
+                                        if (res && res[0]?.url) {
+                                            const docUrl = res[0].url;
+                                            setFormData(prev => ({ ...prev, idDocumentUrl: docUrl }));
+                                            await fetch("/api/user/profile", {
+                                                method: "POST",
+                                                headers: { "Content-Type": "application/json" },
+                                                body: JSON.stringify({ idDocumentUrl: docUrl }),
+                                            });
+                                            await refreshMetadata();
+                                            toast.success("ID Document uploaded & saved successfully! ✓", { id: "docUpload" });
+                                        }
+                                    } catch (err: any) {
+                                        toast.error("Document upload failed. Please try again.", { id: "docUpload" });
+                                    }
+                                }}
+                            />
+                            {formData.idDocumentUrl ? (
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 rounded-full bg-[#22c55e]/20 border border-[#22c55e] flex items-center justify-center shrink-0">
+                                            <Icon icon="lucide:check-circle-2" className="text-2xl text-[#22c55e]" />
+                                        </div>
+                                        <div className="text-left">
+                                            <div className="flex items-center gap-2 mb-0.5">
+                                                <h4 className="text-sm font-bold text-white">Government ID Document / Passport</h4>
+                                                <span className="bg-[#22c55e]/20 text-[#22c55e] border border-[#22c55e]/40 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1">
+                                                    <Icon icon="lucide:check" className="text-xs font-black" />
+                                                    Document Uploaded ✓
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-gray-400">Verified & stored in cloud storage. Click box to upload replacement.</p>
+                                        </div>
+                                    </div>
+                                    <a 
+                                        href={formData.idDocumentUrl} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer" 
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="bg-[#22c55e]/15 hover:bg-[#22c55e]/25 text-[#22c55e] border border-[#22c55e]/30 px-4 py-2 rounded-xl font-bold text-xs transition-colors flex items-center gap-1.5 shrink-0"
+                                    >
+                                        <span>View Document</span>
+                                        <Icon icon="lucide:external-link" className="text-xs" />
+                                    </a>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-2">
+                                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                        <Icon icon="lucide:file-up" className="text-xl text-gray-300" />
+                                    </div>
+                                    <p className="text-sm font-semibold text-gray-300">
+                                        Click to upload ID Card, Passport, or Driver's License
+                                    </p>
+                                    <p className="text-xs text-gray-500 mt-1">Supports PNG, JPG, PDF up to 8MB</p>
+                                </div>
+                            )}
+                        </label>
                     </div>
                 </div>
 

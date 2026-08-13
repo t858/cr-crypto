@@ -706,13 +706,40 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                                         </div>
 
                                         <div>
-                                            <label className="block text-xs font-medium text-gray-400 mb-1">Upload ID Card / Passport (Optional)</label>
-                                            <input
-                                                type="file"
-                                                accept="image/*,.pdf"
-                                                onChange={(e) => setIdCardFile(e.target.files?.[0] || null)}
-                                                className="w-full bg-[#111315] border border-white/5 rounded-lg py-2 px-3 text-xs text-gray-400 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:bg-white/10 file:text-white hover:file:bg-white/20"
-                                            />
+                                            <label className="block text-xs font-medium text-gray-400 mb-1.5">Upload ID Card / Passport (Optional)</label>
+                                            <label className={`block border ${idCardFile || metadata?.profile?.idDocumentUrl ? 'border-[#22c55e]/50 bg-[#22c55e]/5' : 'border-white/10 bg-[#111315]'} rounded-xl p-4 cursor-pointer hover:bg-white/5 transition-all text-center group`}>
+                                                <input
+                                                    type="file"
+                                                    accept="image/*,.pdf"
+                                                    className="hidden"
+                                                    onChange={(e) => setIdCardFile(e.target.files?.[0] || null)}
+                                                />
+                                                {(idCardFile || metadata?.profile?.idDocumentUrl) ? (
+                                                    <div className="flex flex-col items-center justify-center py-1">
+                                                        <div className="w-12 h-12 rounded-full bg-[#22c55e]/20 border border-[#22c55e] flex items-center justify-center mb-2">
+                                                            <Icon icon="lucide:check-circle-2" className="text-2xl text-[#22c55e]" />
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5 bg-[#22c55e]/20 text-[#22c55e] border border-[#22c55e]/40 px-3 py-1 rounded-full font-bold text-xs mb-1">
+                                                            <Icon icon="lucide:check" className="text-sm font-black" />
+                                                            <span>Document Uploaded ✓</span>
+                                                        </div>
+                                                        <p className="text-xs text-gray-300 font-medium truncate max-w-[280px]">
+                                                            {idCardFile ? idCardFile.name : "Government ID Document Attached"}
+                                                        </p>
+                                                        <span className="text-[11px] text-gray-400 mt-1 hover:underline">Click to change document</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex flex-col items-center justify-center py-2">
+                                                        <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                                            <Icon icon="lucide:file-up" className="text-xl text-gray-300" />
+                                                        </div>
+                                                        <p className="text-xs font-semibold text-gray-300">
+                                                            Click to upload ID Card, Passport, or Driver's License
+                                                        </p>
+                                                        <p className="text-[10px] text-gray-500 mt-0.5">Supports PNG, JPG, PDF up to 8MB</p>
+                                                    </div>
+                                                )}
+                                            </label>
                                         </div>
 
                                         <button type="submit" disabled={submittingKyc} className="w-full py-3 mt-4 rounded-xl font-bold bg-[#FF4520] hover:bg-[#1fae53] text-black transition-colors disabled:opacity-50">
@@ -729,7 +756,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                                     <p className="text-gray-400 text-sm mb-6">Choose how you want to be displayed on the platform.</p>
 
                                     <form onSubmit={handleVerifyPicSubmit} className="space-y-6">
-                                        <label className="bg-[#111315] border border-white/5 rounded-xl p-6 flex flex-col items-center justify-center border-dashed cursor-pointer hover:bg-white/5 transition-colors group block">
+                                        <label className={`bg-[#111315] border ${profilePicFile || metadata?.profile?.photoUrl ? 'border-[#22c55e]/50 bg-[#22c55e]/5' : 'border-white/5'} rounded-xl p-6 flex flex-col items-center justify-center border-dashed cursor-pointer hover:bg-white/5 transition-colors group block relative`}>
                                             <input
                                                 type="file"
                                                 accept="image/*"
@@ -738,13 +765,31 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                                                     if (e.target.files?.[0]) setProfilePicFile(e.target.files[0]);
                                                 }}
                                             />
-                                            <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                                                <Icon icon="lucide:upload-cloud" className="text-2xl text-gray-300" />
-                                            </div>
-                                            <p className="text-sm font-medium text-gray-300">
-                                                {profilePicFile ? profilePicFile.name : "Click to upload picture"}
-                                            </p>
-                                            <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 5MB</p>
+                                            {(profilePicFile || metadata?.profile?.photoUrl) ? (
+                                                <div className="flex flex-col items-center justify-center">
+                                                    <div className="w-16 h-16 rounded-full bg-[#22c55e]/20 border-2 border-[#22c55e] flex items-center justify-center mb-3 relative">
+                                                        <Icon icon="lucide:check-circle-2" className="text-3xl text-[#22c55e]" />
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 bg-[#22c55e]/20 text-[#22c55e] border border-[#22c55e]/40 px-3 py-1 rounded-full font-bold text-xs mb-1">
+                                                        <Icon icon="lucide:check" className="text-sm font-black" />
+                                                        <span>Selfie Uploaded ✓</span>
+                                                    </div>
+                                                    <p className="text-xs text-gray-300 font-medium">
+                                                        {profilePicFile ? profilePicFile.name : "Uploaded Selfie Picture"}
+                                                    </p>
+                                                    <span className="text-[11px] text-gray-400 mt-1 hover:underline">Click to change picture</span>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                                                        <Icon icon="lucide:upload-cloud" className="text-2xl text-gray-300" />
+                                                    </div>
+                                                    <p className="text-sm font-medium text-gray-300">
+                                                        Click to upload selfie picture
+                                                    </p>
+                                                    <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 5MB</p>
+                                                </>
+                                            )}
                                         </label>
 
                                         <div className="flex items-center gap-4 w-full">
