@@ -16,9 +16,12 @@ export const metadata: Metadata = {
   },
   description: "World-Class Crypto Exchange & Professional Trading Platform - Pionex",
   icons: {
-    icon: "/images/logo/pionex-logo.png",
-    shortcut: "/images/logo/pionex-logo.png",
-    apple: "/images/logo/pionex-logo.png",
+    icon: [
+      { url: "/icon.png", type: "image/png" },
+      { url: "/favicon.ico" },
+    ],
+    shortcut: "/icon.png",
+    apple: "/apple-icon.png",
   },
 }
 
