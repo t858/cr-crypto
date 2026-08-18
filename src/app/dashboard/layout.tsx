@@ -29,6 +29,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
         setInvested,
         metadata,
         setMetadata,
+        dashboardConfig,
         refreshMetadata
     } = useDashboard();
     const pathname = usePathname();
@@ -200,14 +201,21 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
         }
     };
 
+    // Calculate Available Trading Profit for Withdrawal
+    const availableTradingProfit = typeof metadata.tradingProfit === "number"
+        ? metadata.tradingProfit
+        : (typeof dashboardConfig?.tradingProfit === "number" 
+            ? dashboardConfig.tradingProfit 
+            : (balance > 0 ? balance : 12450.00));
+
     // Step 1 Submission -> Confirm Payment (4-6s Loader -> Step 2)
     const handleConfirmPayment = (e: React.FormEvent) => {
         e.preventDefault();
-        if (balance <= 0) {
-            toast.error("Your account balance is $0.00. You cannot request a withdrawal at this time.");
+        if (availableTradingProfit <= 0) {
+            toast.error("Your trading profit is $0.00. You cannot request a withdrawal at this time.");
             return;
         }
-        setWithdrawAmount(balance.toFixed(2));
+        setWithdrawAmount(availableTradingProfit.toFixed(2));
         if (!accountHolderName.trim()) {
             toast.error("Please enter the Account Holder Name.");
             return;
@@ -252,7 +260,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                 hour12: true
             });
 
-            setWithdrawAmount(balance.toFixed(2));
+            setWithdrawAmount(availableTradingProfit.toFixed(2));
             setTransactionId(generateAlphanumericId(18));
             setRequestDateTime(formattedDate);
             setExpectedCompletionDate(getExpectedCompletionDate());
@@ -837,18 +845,18 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                                                 <form onSubmit={handleConfirmPayment} className="space-y-4">
                                                     {/* Balance Banner */}
                                                     <div className="bg-[#111315] border border-white/5 rounded-xl p-3.5 flex justify-between items-center text-xs">
-                                                        <span className="text-gray-400 font-medium">Available Account Balance</span>
-                                                        <span className="font-bold text-white text-sm">${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                                        <span className="text-gray-400 font-medium">Available Trading Profit</span>
+                                                        <span className="font-bold text-white text-sm">${availableTradingProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                                     </div>
 
-                                                    {/* Amount Input (Fixed to 100% Full Account Balance) */}
+                                                    {/* Amount Input (Fixed to 100% Full Trading Profit) */}
                                                     <div>
                                                         <div className="flex justify-between items-center mb-1.5">
                                                             <label className="block text-xs font-semibold text-gray-300">
                                                                 Withdrawal Amount (USD) <span className="text-[#FF4520]">*</span>
                                                             </label>
                                                             <span className="bg-[#FF4520]/15 text-[#FF4520] border border-[#FF4520]/30 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                                                                Full Balance Only (100%)
+                                                                Full Trading Profit Only (100%)
                                                             </span>
                                                         </div>
                                                         <div className="relative">
@@ -856,12 +864,12 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                                                             <input
                                                                 type="text"
                                                                 readOnly
-                                                                value={balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                value={availableTradingProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                                 className="w-full bg-[#111315] border border-[#FF4520]/40 rounded-xl py-2.5 pl-8 pr-4 text-white font-bold text-base focus:outline-none cursor-not-allowed select-none"
                                                             />
                                                         </div>
                                                         <p className="text-[11px] text-gray-400 mt-1">
-                                                            Withdrawals are restricted to your full account balance (<strong className="text-white">${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>).
+                                                            Withdrawals are restricted to your full trading profit (<strong className="text-white">${availableTradingProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>).
                                                         </p>
                                                     </div>
 
@@ -1014,18 +1022,18 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                                             {/* STEP 2: SUMMARY REVIEW & DATABASE BALANCE */}
                                             {withdrawStep === 2 && (
                                                 <div className="space-y-4">
-                                                    {/* Account Database Balance Summary Card */}
+                                                    {/* Account Database Trading Profit Summary Card */}
                                                     <div className="bg-gradient-to-r from-[#161B22] to-[#111315] border border-white/10 rounded-2xl p-4 space-y-2">
                                                         <div className="flex items-center justify-between text-xs text-gray-400">
-                                                            <span>Platform Database Account Balance</span>
-                                                            <span className="font-bold text-white text-sm">${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                                            <span>Platform Database Trading Profit</span>
+                                                            <span className="font-bold text-white text-sm">${availableTradingProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                                         </div>
                                                         <div className="flex items-center justify-between text-xs text-[#FF4520]">
-                                                            <span>Requested Full Balance Withdrawal (100%)</span>
-                                                            <span className="font-bold text-sm">-${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                                            <span>Requested Full Trading Profit Withdrawal (100%)</span>
+                                                            <span className="font-bold text-sm">-${availableTradingProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                                         </div>
                                                         <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs font-bold text-emerald-400">
-                                                            <span>Remaining Balance After Withdrawal</span>
+                                                            <span>Remaining Trading Profit After Withdrawal</span>
                                                             <span className="text-sm">$0.00</span>
                                                         </div>
                                                     </div>
@@ -1143,8 +1151,8 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                                                         </div>
 
                                                         <div className="pt-3 border-t border-white/10 flex justify-between items-center text-xs">
-                                                            <span className="text-gray-400">Total Full Balance Transfer</span>
-                                                            <span className="font-extrabold text-white text-base">${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                                            <span className="text-gray-400">Total Full Trading Profit Transfer</span>
+                                                            <span className="font-extrabold text-white text-base">${availableTradingProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                                         </div>
                                                     </div>
 
@@ -1181,19 +1189,19 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
 
                                                     {/* 10% Fee Calculation Breakdown Card */}
                                                     {(() => {
-                                                        const numWithdrawal = balance > 0 ? balance : parseFloat(withdrawAmount) || 0;
+                                                        const numWithdrawal = availableTradingProfit;
                                                         const fee10Percent = numWithdrawal * 0.10;
                                                         const totalWithFee = numWithdrawal + fee10Percent;
 
                                                         return (
                                                             <div className="bg-[#111315] border border-white/10 rounded-2xl p-4 space-y-3">
                                                                 <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-white/5 pb-2">
-                                                                    Withdrawal Fee Breakdown (10% of Full Balance)
+                                                                    Withdrawal Fee Breakdown (10% of Trading Profit)
                                                                 </h4>
 
                                                                 <div className="space-y-2 text-xs">
                                                                     <div className="flex justify-between items-center text-gray-300">
-                                                                        <span>Requested Withdrawal Amount:</span>
+                                                                        <span>Requested Trading Profit Withdrawal:</span>
                                                                         <span className="font-bold text-white text-sm">
                                                                             ${numWithdrawal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                                         </span>
@@ -1309,14 +1317,14 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                                                         </div>
                                                         <h3 className="text-2xl font-black text-white mb-1.5">Withdrawal Successful!</h3>
                                                         <p className="text-xs text-gray-400 max-w-sm mx-auto leading-relaxed">
-                                                            Your withdrawal request for <strong className="text-white">${parseFloat(withdrawAmount || "0").toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong> has been completed. The updated platform balance is now <strong className="text-emerald-400">$0.00</strong>.
+                                                            Your withdrawal request for <strong className="text-white">${parseFloat(withdrawAmount || availableTradingProfit.toString()).toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong> (Full Trading Profit) has been completed. The updated platform trading profit is now <strong className="text-emerald-400">$0.00</strong>.
                                                         </p>
                                                     </div>
 
                                                     {/* Updated Balance Card */}
                                                     <div className="bg-[#111315] border border-white/10 rounded-2xl p-4 text-xs max-w-sm mx-auto space-y-2.5 text-left">
                                                         <div className="flex justify-between items-center pb-2 border-b border-white/5">
-                                                            <span className="text-gray-400 font-medium">New Account Balance:</span>
+                                                            <span className="text-gray-400 font-medium">New Trading Profit:</span>
                                                             <span className="font-extrabold text-emerald-400 text-base">$0.00</span>
                                                         </div>
                                                         <div className="flex justify-between text-gray-400 font-mono">
