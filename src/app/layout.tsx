@@ -15,13 +15,14 @@ export const metadata: Metadata = {
     template: "%s | Pionex",
   },
   description: "World-Class Crypto Exchange & Professional Trading Platform - Pionex",
+  manifest: "/manifest.json",
   icons: {
     icon: [
       { url: "/icon.png", type: "image/png" },
       { url: "/favicon.ico" },
     ],
     shortcut: "/icon.png",
-    apple: "/apple-icon.png",
+    apple: "/apple-touch-icon.png",
   },
 }
 
@@ -32,6 +33,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang='en' data-scroll-behavior="smooth" suppressHydrationWarning>
+      <head>
+        <link rel="icon" href="/icon.png" type="image/png" sizes="any" />
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="shortcut icon" href="/icon.png" />
+        <link rel="manifest" href="/manifest.json" />
+      </head>
       <body className={`${font.className}`}>
         <AuthProvider>
           <ToasterContext />

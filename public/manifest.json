@@ -1,0 +1,22 @@
+{
+  "name": "Pionex | Professional Crypto Trading & Exchange Platform",
+  "short_name": "Pionex",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0E11",
+  "theme_color": "#FF4520",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
