@@ -69,11 +69,31 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
             const data = await res.json();
 
             if (data?.metadata) {
-                const userMeta = data.metadata;
+                const userMeta = { ...data.metadata };
+                
+                // If user's account balance is 0 (e.g. after withdrawal), ensure invested capital & wallet total are 0
+                if (userMeta.balance === 0) {
+                    userMeta.invested = 0;
+                    userMeta.investedCapital = 0;
+                    userMeta.walletTotal = "$0.00";
+                    userMeta.cryptoTotal = "$0.00";
+                    userMeta.tradingProfit = 0;
+                    userMeta.walletBalances = {
+                        btc: "$0.00",
+                        eth: "$0.00",
+                        sol: "$0.00",
+                        ada: "$0.00",
+                        xrp: "$0.00",
+                        avax: "$0.00"
+                    };
+                }
+
                 setMetadata(userMeta);
                 const loadedConfig: UserDashboardConfig = {
                     ...DEFAULT_DASHBOARD_CONFIG,
                     ...userMeta,
+                    invested: userMeta.balance === 0 ? 0 : (userMeta.invested ?? DEFAULT_DASHBOARD_CONFIG.invested),
+                    walletTotal: userMeta.balance === 0 ? "$0.00" : (userMeta.walletTotal ?? DEFAULT_DASHBOARD_CONFIG.walletTotal),
                     walletBalances: {
                         ...DEFAULT_DASHBOARD_CONFIG.walletBalances,
                         ...(userMeta.walletBalances || {})

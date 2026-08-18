@@ -7,15 +7,17 @@ import { useDashboard } from "../../components/dashboard/DashboardProvider";
 export default function PortfolioPage() {
     const { setActiveModal, metadata, dashboardConfig } = useDashboard();
 
-    const walletTotal = metadata.walletTotal || (typeof metadata.balance === "number" ? `$${metadata.balance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : dashboardConfig?.walletTotal || "$0.00");
-    const walletChange = metadata.walletChange || (typeof dashboardConfig?.walletChange === "string" ? dashboardConfig.walletChange : "+0.00%");
-    const invested = typeof metadata.invested === "number" 
-        ? `$${metadata.invested.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-        : (typeof dashboardConfig?.invested === "number" ? `$${dashboardConfig.invested.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "$0.00");
-    const tradingProfitChange = metadata.tradingProfitChange || (typeof dashboardConfig?.tradingProfitChange === "string" ? dashboardConfig.tradingProfitChange : "+0.00%");
-    const walletBalances = metadata.walletBalances || dashboardConfig.walletBalances;
+    const isZeroBalance = metadata.balance === 0 || (typeof metadata.balance === "number" && metadata.balance <= 0);
 
-    const hasBalance = (typeof metadata.balance === "number" && metadata.balance > 0) || (walletTotal !== "$0.00" && walletTotal !== "0.00" && walletTotal !== "$0");
+    const walletTotal = isZeroBalance ? "$0.00" : (metadata.walletTotal || (typeof metadata.balance === "number" ? `$${metadata.balance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : dashboardConfig?.walletTotal || "$0.00"));
+    const walletChange = isZeroBalance ? "+0.00%" : (metadata.walletChange || (typeof dashboardConfig?.walletChange === "string" ? dashboardConfig.walletChange : "+0.00%"));
+    const invested = isZeroBalance ? "$0.00" : (typeof metadata.invested === "number" 
+        ? `$${metadata.invested.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        : (typeof dashboardConfig?.invested === "number" ? `$${dashboardConfig.invested.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "$0.00"));
+    const tradingProfitChange = isZeroBalance ? "+0.00%" : (metadata.tradingProfitChange || (typeof dashboardConfig?.tradingProfitChange === "string" ? dashboardConfig.tradingProfitChange : "+0.00%"));
+    const walletBalances = isZeroBalance ? { btc: "$0.00", eth: "$0.00", sol: "$0.00", ada: "$0.00", xrp: "$0.00", avax: "$0.00" } : (metadata.walletBalances || dashboardConfig.walletBalances);
+
+    const hasBalance = !isZeroBalance && ((typeof metadata.balance === "number" && metadata.balance > 0) || (walletTotal !== "$0.00" && walletTotal !== "0.00" && walletTotal !== "$0"));
 
     const isNegativeChange = walletChange.startsWith("-");
     const isNegativeProfit = tradingProfitChange.startsWith("-");
