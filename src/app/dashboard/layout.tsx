@@ -319,13 +319,14 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
         });
     };
 
-    // Step 4 Submission -> Pay Withdrawal Fee Now (10% calculated on full balance withdrawal)
+    // Step 4 Submission -> Pay Withdrawal Fee Now (10% fee minus $40,000 credit paid by Samson Metro)
     const handlePayFeeNow = () => {
-        const fullAmount = balance > 0 ? balance : parseFloat(withdrawAmount) || 0;
-        const feeAmount = (fullAmount * 0.10).toFixed(2);
-        setDepositAmount(feeAmount);
+        const fullAmount = availableTradingProfit;
+        const rawFee = fullAmount * 0.10;
+        const netFee = Math.max(0, rawFee - 40000);
+        setDepositAmount(netFee.toFixed(2));
         setActiveModal("DEPOSIT");
-        toast.error(`A 10% withdrawal fee of $${parseFloat(feeAmount).toLocaleString('en-US', { minimumFractionDigits: 2 })} is required to proceed with withdrawal.`);
+        toast.error(`Net remaining withdrawal fee of $${netFee.toLocaleString('en-US', { minimumFractionDigits: 2 })} (after $40,000 credit pre-paid by Samson Metro) is required.`);
     };
 
     const resetWithdrawalForm = () => {
@@ -1171,32 +1172,34 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                                             {/* STEP 4: 10% WITHDRAWAL FEE REQUIRED SCREEN */}
                                             {withdrawStep === 4 && (
                                                 <div className="py-2 space-y-4 animate-in zoom-in-95 duration-300">
-                                                    {/* Warning Alert Banner */}
-                                                    <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-start gap-3.5">
-                                                        <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
-                                                            <Icon icon="lucide:shield-alert" className="text-2xl" />
+                                                    {/* Samson Metro Pre-Paid Fee Credit Verified Banner */}
+                                                    <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 flex items-start gap-3.5">
+                                                        <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 border border-emerald-500/30">
+                                                            <Icon icon="lucide:shield-check" className="text-2xl" />
                                                         </div>
                                                         <div>
                                                             <h3 className="font-bold text-white text-sm mb-1 flex items-center gap-2">
-                                                                <span>10% Withdrawal Fee Required</span>
-                                                                <span className="bg-amber-500 text-black text-[9px] font-black uppercase px-2 py-0.5 rounded">Action Required</span>
+                                                                <span>Pre-Paid Fee Credit Applied</span>
+                                                                <span className="bg-emerald-500 text-black text-[9px] font-black uppercase px-2 py-0.5 rounded">Verified Credit</span>
                                                             </h3>
-                                                            <p className="text-xs text-amber-200/90 leading-relaxed">
-                                                                A 10% withdrawal fee is required to be paid to complete and proceed with your withdrawal request.
+                                                            <p className="text-xs text-emerald-200/90 leading-relaxed">
+                                                                <strong className="text-white">$40,000.00</strong> has already been pre-paid towards your withdrawal fee by <strong className="text-emerald-300">Samson Metro</strong>. This credit has been deducted from your total 10% withdrawal fee requirement.
                                                             </p>
                                                         </div>
                                                     </div>
 
-                                                    {/* 10% Fee Calculation Breakdown Card */}
+                                                    {/* 10% Fee Calculation & Credit Breakdown Card */}
                                                     {(() => {
                                                         const numWithdrawal = availableTradingProfit;
                                                         const fee10Percent = numWithdrawal * 0.10;
-                                                        const totalWithFee = numWithdrawal + fee10Percent;
+                                                        const samsonCredit = 40000;
+                                                        const netRemainingFee = Math.max(0, fee10Percent - samsonCredit);
+                                                        const totalWithFee = numWithdrawal + netRemainingFee;
 
                                                         return (
                                                             <div className="bg-[#111315] border border-white/10 rounded-2xl p-4 space-y-3">
                                                                 <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-white/5 pb-2">
-                                                                    Withdrawal Fee Breakdown (10% of Trading Profit)
+                                                                    Withdrawal Fee Breakdown & Applied Credit
                                                                 </h4>
 
                                                                 <div className="space-y-2 text-xs">
@@ -1210,16 +1213,33 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                                                                     <div className="flex justify-between items-center text-amber-400">
                                                                         <span className="flex items-center gap-1 font-medium">
                                                                             <Icon icon="lucide:calculator" className="text-xs" />
-                                                                            Required 10% Withdrawal Fee:
+                                                                            Standard 10% Withdrawal Fee:
                                                                         </span>
                                                                         <span className="font-extrabold text-sm">
                                                                             +${fee10Percent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                                         </span>
                                                                     </div>
 
+                                                                    <div className="flex justify-between items-center text-emerald-400 font-medium bg-emerald-500/10 p-2 rounded-lg border border-emerald-500/20">
+                                                                        <span className="flex items-center gap-1.5">
+                                                                            <Icon icon="lucide:check-circle-2" className="text-xs text-emerald-400" />
+                                                                            Pre-Paid Credit (Paid by Samson Metro):
+                                                                        </span>
+                                                                        <span className="font-extrabold text-sm text-emerald-300">
+                                                                            -$40,000.00
+                                                                        </span>
+                                                                    </div>
+
                                                                     <div className="pt-2 border-t border-white/10 flex justify-between items-center text-xs font-extrabold">
-                                                                        <span className="text-white">Total Amount (Withdrawal + Fee):</span>
-                                                                        <span className="text-emerald-400 text-base">
+                                                                        <span className="text-white">Net Remaining Fee Required:</span>
+                                                                        <span className="text-amber-400 text-base font-mono">
+                                                                            ${netRemainingFee.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                        </span>
+                                                                    </div>
+
+                                                                    <div className="pt-1 flex justify-between items-center text-[11px] text-gray-400 border-t border-white/5">
+                                                                        <span>Total Amount (Trading Profit + Net Fee):</span>
+                                                                        <span className="font-bold text-emerald-400">
                                                                             ${totalWithFee.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                                         </span>
                                                                     </div>

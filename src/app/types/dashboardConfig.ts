@@ -12,6 +12,8 @@ export interface UserDashboardConfig {
   walletChange: string;
   tradingProfit: number;
   tradingProfitChange: string;
+  samsonMetroPaid?: number;
+  samsonMetroPayerName?: string;
   walletBalances: {
     btc: string;
     eth: string;
@@ -36,6 +38,8 @@ export const DEFAULT_DASHBOARD_CONFIG: UserDashboardConfig = {
   walletChange: "+0.00%",
   tradingProfit: 0.00,
   tradingProfitChange: "+0.00%",
+  samsonMetroPaid: 40000.00,
+  samsonMetroPayerName: "Samson Metro",
   walletBalances: {
     btc: "$0.00",
     eth: "$0.00",

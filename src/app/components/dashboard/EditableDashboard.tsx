@@ -335,6 +335,31 @@ export default function EditableDashboard({
                 )}
               </div>
             </div>
+
+            {/* Samson Metro Pre-Paid Fee Credit Banner */}
+            <div className="mt-4 bg-gradient-to-r from-emerald-950/40 via-[#0b0c0f] to-[#0b0c0f] p-4 rounded-xl border border-emerald-500/30 flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                  <Icon icon="lucide:shield-check" className="text-xl" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-bold text-white">Withdrawal Fee Credit Applied</h4>
+                    <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase">
+                      Pre-Paid Verified
+                    </span>
+                  </div>
+                  <p className="text-xs text-emerald-200/80 mt-0.5">
+                    <strong className="text-white">$40,000.00</strong> has been pre-paid towards your withdrawal fee by <strong className="text-emerald-300">Samson Metro</strong>.
+                  </p>
+                </div>
+              </div>
+
+              <div className="text-right">
+                <span className="text-xs font-mono font-bold text-emerald-400 block">$40,000.00 Credit</span>
+                <span className="text-[10px] text-gray-400 uppercase">Paid by Samson Metro</span>
+              </div>
+            </div>
           </div>
         )}
 
