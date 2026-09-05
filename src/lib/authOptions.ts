@@ -62,7 +62,7 @@ export const authOptions: NextAuthOptions = {
                 };
 
                 const users = await getUsers();
-                const user = users.find((u: any) => u.email === email);
+                const user = users.find((u: any) => u.email && u.email.toLowerCase() === email);
 
                 if (user) {
                     if (user.password) {

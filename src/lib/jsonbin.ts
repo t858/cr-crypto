@@ -108,7 +108,17 @@ export async function updateUser(identifier: string, updateData: any) {
     
     if (index === -1) return null;
 
-    users[index] = { ...users[index], ...updateData };
+    const existingUser = users[index];
+    const mergedMetadata = updateData.metadata 
+        ? { ...(existingUser.metadata || {}), ...updateData.metadata }
+        : existingUser.metadata;
+
+    users[index] = { 
+        ...existingUser, 
+        ...updateData,
+        ...(mergedMetadata ? { metadata: mergedMetadata } : {})
+    };
+
     const saved = await saveUsers(users);
     
     return saved ? users[index] : null;

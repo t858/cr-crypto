@@ -6,41 +6,57 @@ import axios from "axios";
 import Link from "next/link";
 import Image from "next/image";
 import Loader from "../../shared/Loader";
+import { useRouter } from "next/navigation";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loader, setLoader] = useState(false);
+  const router = useRouter();
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
 
     if (!email) {
       toast.error("Please enter your email address.");
+      return;
+    }
 
+    if (!newPassword) {
+      toast.error("Please enter a new password.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error("New password and confirm password do not match.");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters long.");
       return;
     }
 
     setLoader(true);
 
     try {
-      const res = await axios.post("/api/forgot-password/reset", {
-        email: email.toLowerCase(),
+      const res = await axios.post("/api/auth/reset-password", {
+        email: email.trim().toLowerCase(),
+        newPassword,
+        confirmPassword,
       });
 
-      if (res.status === 404) {
-        toast.error("User not found.");
-        return;
-      }
-
       if (res.status === 200) {
-        toast.success(res.data);
+        toast.success(res.data.message || "Password updated successfully!");
         setEmail("");
+        setNewPassword("");
+        setConfirmPassword("");
+        router.push("/signin");
       }
-
-      setEmail("");
-      setLoader(false);
     } catch (error: any) {
-      toast.error(error?.response.data);
+      toast.error(error?.response?.data?.message || "Failed to update password.");
+    } finally {
       setLoader(false);
     }
   };
@@ -73,11 +89,11 @@ const ForgotPassword = () => {
                 </Link>
               </div>
 
-              <form onSubmit={handleSubmit}>
-                <div className="mb-[22px]">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
                   <input
                     type="email"
-                    placeholder="Email"
+                    placeholder="Email Address"
                     name="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -85,12 +101,37 @@ const ForgotPassword = () => {
                     className="w-full rounded-md border border-stroke bg-transparent px-5 py-3 text-base text-dark outline-hidden transition placeholder:text-dark-6 focus:border-primary focus-visible:shadow-none dark:border-dark-3 dark:text-white dark:focus:border-primary"
                   />
                 </div>
-                <div className="">
+
+                <div>
+                  <input
+                    type="password"
+                    placeholder="New Password"
+                    name="newPassword"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                    className="w-full rounded-md border border-stroke bg-transparent px-5 py-3 text-base text-dark outline-hidden transition placeholder:text-dark-6 focus:border-primary focus-visible:shadow-none dark:border-dark-3 dark:text-white dark:focus:border-primary"
+                  />
+                </div>
+
+                <div>
+                  <input
+                    type="password"
+                    placeholder="Confirm New Password"
+                    name="confirmPassword"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    className="w-full rounded-md border border-stroke bg-transparent px-5 py-3 text-base text-dark outline-hidden transition placeholder:text-dark-6 focus:border-primary focus-visible:shadow-none dark:border-dark-3 dark:text-white dark:focus:border-primary"
+                  />
+                </div>
+
+                <div className="pt-2">
                   <button
                     type="submit"
-                    className="flex w-full cursor-pointer items-center justify-center rounded-md border border-primary bg-primary px-5 py-3 text-base text-black transition duration-300 ease-in-out hover:bg-blue-dark"
+                    className="flex w-full cursor-pointer items-center justify-center rounded-md border border-primary bg-primary px-5 py-3 text-base text-black font-bold transition duration-300 ease-in-out hover:bg-blue-dark"
                   >
-                    Send Password Reset Link {loader && <Loader />}
+                    Reset Password {loader && <Loader />}
                   </button>
                 </div>
               </form>

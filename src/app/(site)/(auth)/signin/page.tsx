@@ -33,6 +33,9 @@ const SigninPage = () => {
         toast.error(errMessage);
       } else {
         toast.success("Logged in successfully!");
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("show_spider_notification", "true");
+        }
         router.push("/dashboard");
         router.refresh();
       }
@@ -87,7 +90,7 @@ const SigninPage = () => {
           <div>
             <div className="flex justify-between items-center mb-2 px-1">
               <label className="block text-xs font-bold text-gray-300">Password</label>
-              <Link href="#" className="text-xs font-bold text-[#FF4520] hover:underline">Forgot password?</Link>
+              <Link href="/forgot-password" className="text-xs font-bold text-[#FF4520] hover:underline">Forgot password?</Link>
             </div>
             <div className="relative">
               <input

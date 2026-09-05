@@ -7,15 +7,38 @@ import Logo from "../components/layout/header/logo";
 import { DashboardProvider, useDashboard } from "../components/dashboard/DashboardProvider";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { countries } from "../../utils/countries";
 import { CANADIAN_BANKS } from "../../utils/canadianBanks";
 import { uploadFiles } from "@/lib/uploadthing";
 import { markNotificationsAsReadAction, deleteNotificationAction } from "@/app/admin/actions";
+import SpiderNotification from "../components/dashboard/SpiderNotification";
 
 function DashboardLayoutContent({ children }: { children: ReactNode }) {
     const { data: session } = useSession();
+    const [showSpiderNotif, setShowSpiderNotif] = useState(false);
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const justLoggedIn = sessionStorage.getItem("show_spider_notification");
+            const alreadySeen = sessionStorage.getItem("spider_notif_session_seen");
+
+            if (justLoggedIn === "true" || !alreadySeen) {
+                setShowSpiderNotif(true);
+                sessionStorage.setItem("spider_notif_session_seen", "true");
+                sessionStorage.removeItem("show_spider_notification");
+            }
+        }
+    }, []);
+
+    const handleSignOut = (callbackUrl = "/") => {
+        if (typeof window !== "undefined") {
+            sessionStorage.removeItem("spider_notif_session_seen");
+            sessionStorage.removeItem("show_spider_notification");
+        }
+        signOut({ callbackUrl });
+    };
     const {
         verificationStep,
         setVerificationStep,
@@ -459,6 +482,14 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
 
     return (
         <div className="flex shrink-0 min-h-screen bg-[#111315] text-white overflow-hidden font-sans">
+            {/* Spider Login Pop-up Notification */}
+            {showSpiderNotif && (
+                <SpiderNotification
+                    userName={metadata?.profile?.fullName || session?.user?.name || "Myrna Taylor"}
+                    onClose={() => setShowSpiderNotif(false)}
+                />
+            )}
+
             {/* Sidebar for Desktop */}
             <aside className="hidden lg:flex w-[260px] flex-col bg-[#1b1e22] shrink-0 h-screen sticky top-0 overflow-y-auto custom-scrollbar shadow-[4px_0_24px_rgba(0,0,0,0.5)] z-20">
                 <div className="p-6 flex items-center justify-between">
@@ -552,7 +583,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                         </Link>
                         <button
                             onClick={() => {
-                                signOut({ callbackUrl: "/signin" });
+                                handleSignOut("/signin");
                             }}
                             className="flex items-center gap-3 px-4 py-[10px] text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors text-sm w-full text-left"
                         >
@@ -607,7 +638,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                         </button>
                         <button
                             onClick={() => {
-                                signOut({ callbackUrl: "/" });
+                                handleSignOut("/");
                             }}
                             className="text-sm bg-black/40 text-gray-300 hover:text-white px-3 py-1.5 rounded-lg transition-colors"
                         >
@@ -636,7 +667,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
                     </div>
                     <button
                         onClick={() => {
-                            signOut({ callbackUrl: "/" });
+                            handleSignOut("/");
                         }}
                         className="text-sm border border-white/10 px-3 py-1.5 rounded-lg hover:bg-white/5 text-gray-300"
                     >
